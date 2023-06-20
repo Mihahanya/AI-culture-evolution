@@ -588,7 +588,7 @@ MonoBehaviour:
   countNewInSec: 0
   spreadX: 120
   spreadY: 120
-  prespawnedCount: 50
+  prespawnedCount: 30
   maxCount: 10000
   tagToCount: bacteria
 --- !u!4 &1003126803
@@ -722,7 +722,7 @@ MonoBehaviour:
     m_Alignment: 8
     m_AlignByGeometry: 0
     m_RichText: 1
-    m_HorizontalOverflow: 0
+    m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
   m_Text: 9856
@@ -766,8 +766,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 212.7, y: -854}
-  m_SizeDelta: {x: 374.3, y: 406.1}
+  m_AnchoredPosition: {x: 212.7, y: -880.7}
+  m_SizeDelta: {x: 374.3, y: 459.6}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1294848033
 GameObject:
@@ -1160,8 +1160,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 250, y: -580.6}
-  m_SizeDelta: {x: 429.4, y: 1093.5}
+  m_AnchoredPosition: {x: 250, y: -602.32}
+  m_SizeDelta: {x: 429.4, y: 1136.94}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1451696141
 MonoBehaviour:
@@ -1419,8 +1419,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 212.7, y: -854}
-  m_SizeDelta: {x: 374.3, y: 406.1}
+  m_AnchoredPosition: {x: 212.7, y: -880.7}
+  m_SizeDelta: {x: 374.3, y: 459.6}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1783069018
 GameObject:
@@ -1456,7 +1456,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -167.5, y: 82.899994}
+  m_AnchoredPosition: {x: -167.5, y: 82.8999}
   m_SizeDelta: {x: 261.7, y: 78.7}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1783069020
@@ -1663,6 +1663,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Color.b
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679018277937709735, guid: cfa751db6e2716f408ce7fc5e0e42b88,
+        type: 3}
+      propertyPath: immortal
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cfa751db6e2716f408ce7fc5e0e42b88, type: 3}

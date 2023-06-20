@@ -6,11 +6,11 @@ using System.Linq;
 
 public class Agent : MonoBehaviour
 {
-    public bool immortal = true;
+    public bool immortal = false;
 
     public GameObject bacteriaPrefab;
 
-    public float energy = 8;
+    public float energy = 8*20;
 
     public float age = 0;
     public int generation = 0;
@@ -34,7 +34,7 @@ public class Agent : MonoBehaviour
     private float lastFrameTime;
     private float timer = 40f;
 
-    int eate = 0;
+    int reward = 0;
 
     void Start()
     {
@@ -63,15 +63,6 @@ public class Agent : MonoBehaviour
 
     void Update()
     {
-        age += Mathf.Min(Time.deltaTime, 0.5f);
-        
-        if (!immortal)
-            energy--;
-            //energy -= Mathf.Min(Time.deltaTime, 0.5f);
-
-        //else 
-        //    energy = 69;
-
         // Go crazy
         //timer -= Mathf.Min(Time.deltaTime, 0.5f);
         //if (timer <= 0)
@@ -99,6 +90,13 @@ public class Agent : MonoBehaviour
         lastFrameTime = Time.realtimeSinceStartup;
 
         if (pause) return;
+
+
+        age += Mathf.Min(Time.deltaTime, 0.5f);
+
+        if (!immortal)
+            energy -= 1f;
+        //energy -= Mathf.Min(Time.deltaTime, 0.5f);
 
 
         float[] newInputs = new float[inputCount];
@@ -169,8 +167,11 @@ public class Agent : MonoBehaviour
 
         outputs = genome.nn.FeedForward(inputs);
 
-        rb.velocity = RotateVector(new Vector2(outputs[0], outputs[1]) * speed, transform.localEulerAngles.z) * Config.fps / Time.deltaTime;
-        rb.angularVelocity = outputs[2] * angSpeed * Config.fps / Time.deltaTime;
+        float fps = Config.fps;
+        if (Config.fps > 1f / Time.deltaTime) fps = 1f / Time.deltaTime;
+
+        rb.velocity = RotateVector(new Vector2(outputs[0], outputs[1]) * speed, transform.localEulerAngles.z) * fps;
+        rb.angularVelocity = outputs[2] * angSpeed * fps;
 
         if (outputs[3] > 0.5f && energy >= genome.GetActualSkill("needEnergyDivide"))
             DivideYourself();
@@ -181,7 +182,7 @@ public class Agent : MonoBehaviour
         consumption += Mathf.Abs(outputs[2]) * Mathf.Abs(genome.skills["angularSpeed"].First);
         
         //consumption *= Mathf.Pow(genome.skills["size"].First, 2f) * 0.35f * myDeltaTime;
-        consumption *= 0.4f;
+        consumption *= 0.4f/20f;
 
         if (!immortal)
             energy -= consumption;
@@ -199,10 +200,10 @@ public class Agent : MonoBehaviour
         }
 
         epoch.AddEpoch(inputs, outputs, 
-                       eate + 
+                       reward + 
                        findedRays_n / eyesCount * 0.001f +
                        (1f / (minDist+1) - 1f / (5+1)) * 0.02f);
-        eate = 0;
+        reward = 0;
 
         if (epoch.IsDone()) epoch.Apply(ref genome.nn);
 
@@ -213,7 +214,7 @@ public class Agent : MonoBehaviour
         if (col.gameObject.tag == "food")
         {
             //var fd = genome.GetActualSkill("foodAspect");
-            eate += 1;
+            reward += 1;
             energy += 2.5f*20;
             Destroy(col.gameObject);
         }
@@ -221,7 +222,9 @@ public class Agent : MonoBehaviour
 
     void DivideYourself()
     {
-        return;
+        //return;
+
+        reward += 7;
 
         GameObject b = (GameObject)UnityEngine.Object.Instantiate(bacteriaPrefab);
         b.transform.position = transform.position;

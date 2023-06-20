@@ -180,20 +180,20 @@ public class Display : MonoBehaviour
         {
             Config.SetEpochDuration(Config.epochDuration / 1.2f);
             Application.targetFrameRate = Config.fps;
-            epochDurationText.text = Config.epochDuration.ToString();
         }
         if (Input.GetKeyDown(KeyCode.S))
         {
             Config.SetEpochDuration(Config.epochDuration * 1.2f);
             Application.targetFrameRate = Config.fps;
-            epochDurationText.text = Config.epochDuration.ToString();
         }
 
 
         frameTimer -= Time.deltaTime;
         if (frameTimer < 0)
         {
-            fpsText.text = "FPS: " + framesCount;
+            fpsText.text = "Steps per second: " + framesCount;
+            epochDurationText.text = "Epoch duration:" + (Config.epochDuration).ToString("N4") + 
+                                     ", Actual: " + ((float)Config.stepsPerEpoch / framesCount).ToString("N4");
 
             framesCount = 0;
             frameTimer = 1f;
