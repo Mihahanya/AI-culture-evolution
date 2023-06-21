@@ -51,7 +51,12 @@ public class Epoch
         {
             float[] outs = outputs[i];
             float[] explicitOuts = ToExplicitOutput(outs);
-            des[i] = explicitOuts.Zip(outs, (x, y) => (x - y) * discountedReward[i] * 0.002f).ToArray();
+
+            des[i] = new float[outs.Length];
+            for (int j = 0; j < outs.Length; j++)
+            {
+                des[i][j] = (explicitOuts[j] - outs[j]) * discountedReward[i] * 0.002f;
+            }
         }
 
         nn.BackProp(inputs, des);

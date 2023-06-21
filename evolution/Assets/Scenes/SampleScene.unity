@@ -571,7 +571,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1003126802
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -588,7 +588,7 @@ MonoBehaviour:
   countNewInSec: 0
   spreadX: 120
   spreadY: 120
-  prespawnedCount: 30
+  prespawnedCount: 50
   maxCount: 10000
   tagToCount: bacteria
 --- !u!4 &1003126803

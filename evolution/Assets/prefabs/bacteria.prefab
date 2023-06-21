@@ -29,7 +29,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7790259825583148384}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.64048, y: -89.2513, z: 0}
+  m_LocalPosition: {x: -74.31021, y: 52.243736, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -148,23 +148,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56895268d9a92aa438b8cd20cb5168af, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  immortal: 0
   bacteriaPrefab: {fileID: 7790259825583148384}
-  energy: 20
   age: 0
   generation: 0
-  outputs:
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0

@@ -26,9 +26,10 @@ public class NN
     {
         sizes = nn.sizes;
         layers = new Layer[nn.layers.Length];
+        Array.Copy(nn.layers, layers, nn.layers.Length);
 
-        for (int i = 0; i < nn.layers.Length; i++)
-            layers[i] = new Layer(nn.layers[i]);
+        //for (int i = 0; i < nn.layers.Length; i++)
+        //    layers[i] = new Layer(nn.layers[i]);
     }
 
     public float[] FeedForward(float[] inputs)
@@ -108,7 +109,12 @@ public class NN
             }
         }
 
-        Array.Copy(newLayers, layers, newLayers.Length);
+        for (int i = 0; i <  layers.Length; i++)
+        {
+
+        }
+
+        //Array.Copy(newLayers, layers, newLayers.Length);
     }
 
     float arctanh(float x)

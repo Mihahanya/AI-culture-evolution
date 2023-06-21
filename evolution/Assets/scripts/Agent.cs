@@ -6,12 +6,16 @@ using System.Linq;
 
 public class Agent : MonoBehaviour
 {
-    public bool immortal = false;
+    [NonSerialized]
+    public bool exhaustion = false;
+    [NonSerialized]
+    public bool encourage = true;
 
     public GameObject bacteriaPrefab;
+    Rigidbody2D rb;
 
-    public float energy = 8*20;
-
+    [NonSerialized]
+    public float energy = 300;
     public float age = 0;
     public int generation = 0;
 
@@ -23,29 +27,26 @@ public class Agent : MonoBehaviour
     private const int inputCount = eyesCount + 3 + memoryNeurons + 0; // eyes by distance and colors, ~age/energy, ~energy/age 
     private const int outputCount = 3 + memoryNeurons + 1; // move, divide
 
-    Rigidbody2D rb;
-
     float speed, angSpeed, foodProd, memoryFactor;
 
     [NonSerialized]
-    public float[] inputs = new float[inputCount];
-    public float[] outputs = new float[outputCount];
+    public float[] inputs;
+    [NonSerialized]
+    public float[] outputs;
+    [NonSerialized]
+    public float reward = 0;
 
-    private float lastFrameTime;
-    private float timer = 40f;
-
-    int reward = 0;
 
     void Start()
     {
-        lastFrameTime = Time.realtimeSinceStartup;
-
         rb = GetComponent<Rigidbody2D>();
-        
+
+        inputs = new float[inputCount];
+        outputs = new float[outputCount];
+
         epoch = new Epoch(Config.stepsPerEpoch);
 
-        if (generation == 0) 
-            genome = new Genome(inputCount, outputCount);
+        if (generation == 0) genome = new Genome(inputCount, outputCount);
 
         InitAgent();
     }
@@ -61,42 +62,14 @@ public class Agent : MonoBehaviour
         //transform.localScale = Vector3.one * size;
     }
 
-    void Update()
-    {
-        // Go crazy
-        //timer -= Mathf.Min(Time.deltaTime, 0.5f);
-        //if (timer <= 0)
-        //{
-        //    if (UnityEngine.Random.value < 0.5f) genome.Mutate(0.1f, 0.8f, 0, 0);
-        //    else genome.Mutate(0.8f, 0.1f, 0, 0);
-        //
-        //    timer = (30 - 5) / (0.1f * age + 1) + 5;
-        //}
-
-        if (energy <= 0)
-        {
-            Destroy(gameObject);
-        }
-
-    }
-
     void LateUpdate()
     {
         bool pause = Camera.main.GetComponent<camera>().pause;
-
-        float myDeltaTime = Mathf.Min(Time.realtimeSinceStartup - lastFrameTime, 0.5f);
-        if (pause) myDeltaTime = 0;
-
-        lastFrameTime = Time.realtimeSinceStartup;
-
         if (pause) return;
 
+        age++;
 
-        age += Mathf.Min(Time.deltaTime, 0.5f);
-
-        if (!immortal)
-            energy -= 1f;
-        //energy -= Mathf.Min(Time.deltaTime, 0.5f);
+        if (exhaustion) energy -= 1f;
 
 
         float[] newInputs = new float[inputCount];
@@ -154,7 +127,7 @@ public class Agent : MonoBehaviour
 
         for (int i = 0; i < memoryNeurons; i++)
         {
-            newInputs[eyesCount + 3 + i] = outputs[i + 4]; // because movement rotation and division
+            newInputs[eyesCount + 3 + i] = outputs[i + 4]; // because movement, rotation and division
         }
 
         //newInputs[eyesCount + 3 + memoryNeurons] = age / energy;
@@ -167,46 +140,60 @@ public class Agent : MonoBehaviour
 
         outputs = genome.nn.FeedForward(inputs);
 
+        // Physical result
+        
         float fps = Config.fps;
         if (Config.fps > 1f / Time.deltaTime) fps = 1f / Time.deltaTime;
 
-        rb.velocity = RotateVector(new Vector2(outputs[0], outputs[1]) * speed, transform.localEulerAngles.z) * fps;
-        rb.angularVelocity = outputs[2] * angSpeed * fps;
+        rb.velocity = RotateVector(new Vector2(outputs[0], outputs[1]) * speed, transform.localEulerAngles.z) * fps / Config.stepsPerEpoch;
+        rb.angularVelocity = outputs[2] * angSpeed * fps / Config.stepsPerEpoch;
 
         if (outputs[3] > 0.5f && energy >= genome.GetActualSkill("needEnergyDivide"))
             DivideYourself();
 
+        // Movement coasts
 
-        var consumption = 0f;
-        consumption += new Vector2(outputs[0], outputs[1]).magnitude * Mathf.Abs(genome.skills["speed"].First);
-        consumption += Mathf.Abs(outputs[2]) * Mathf.Abs(genome.skills["angularSpeed"].First);
+        if (exhaustion)
+        {
+            var consumption = 0f;
+            consumption += new Vector2(outputs[0], outputs[1]).magnitude * Mathf.Abs(genome.skills["speed"].First);
+            consumption += Mathf.Abs(outputs[2]) * Mathf.Abs(genome.skills["angularSpeed"].First);
         
-        //consumption *= Mathf.Pow(genome.skills["size"].First, 2f) * 0.35f * myDeltaTime;
-        consumption *= 0.4f/20f;
+            //consumption *= Mathf.Pow(genome.skills["size"].First, 2f) * 0.35f;
+            consumption *= 0.2f;
 
-        if (!immortal)
             energy -= consumption;
+        }
 
+        // Death
+
+        if (energy <= 0)
+        {
+            Destroy(gameObject);
+        }
 
         // Rewarding
 
-        var foods = GameObject.FindGameObjectsWithTag("food");
-        float minDist = 5;
-        foreach (var f in foods)
+        if (encourage)
         {
-            float d = Vector2.Distance(f.transform.position, transform.position);
-            if (d < minDist)
-                minDist = d;
+            //var foods = GameObject.FindGameObjectsWithTag("food");
+            //float minDist = 5;
+            //foreach (var f in foods)
+            //{
+            //    float d = Vector2.Distance(f.transform.position, transform.position);
+            //    if (d < minDist)
+            //        minDist = d;
+            //}
+
+            //reward += (1f / (minDist + 1) - 1f / (5 + 1)) * 0.02f;
+
+            //reward += findedRays_n / eyesCount * 0.001f;
+
+            epoch.AddEpoch(inputs, outputs, reward);
+
+            if (epoch.IsDone()) epoch.Apply(ref genome.nn);
         }
-
-        epoch.AddEpoch(inputs, outputs, 
-                       reward + 
-                       findedRays_n / eyesCount * 0.001f +
-                       (1f / (minDist+1) - 1f / (5+1)) * 0.02f);
         reward = 0;
-
-        if (epoch.IsDone()) epoch.Apply(ref genome.nn);
-
     }
 
     void OnTriggerEnter2D(Collider2D col)
@@ -215,14 +202,14 @@ public class Agent : MonoBehaviour
         {
             //var fd = genome.GetActualSkill("foodAspect");
             reward += 1;
-            energy += 2.5f*20;
+            energy += 2.5f*Config.stepsPerEpoch;
             Destroy(col.gameObject);
         }
     }
 
     void DivideYourself()
     {
-        //return;
+        return;
 
         reward += 7;
 
@@ -235,7 +222,7 @@ public class Agent : MonoBehaviour
         agentMind.age = 0;
 
         agentMind.genome = new Genome(genome);
-        agentMind.genome.Mutate(0.2f, 0.3f, 0.2f, 0.05f);
+        agentMind.genome.Mutate(0.5f, 0.3f, 0.2f, 0.05f);
 
         agentMind.InitAgent();
 

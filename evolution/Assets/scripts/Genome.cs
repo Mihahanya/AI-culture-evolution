@@ -27,12 +27,12 @@ public class Genome
 
         skills = new Dictionary<string, SkillsBaseAndVal>()
         {
-            ["speed"] = new SkillsBaseAndVal(1f, 7.5f/20),
-            ["angularSpeed"] = new SkillsBaseAndVal(1f, 160f/20),
+            ["speed"] = new SkillsBaseAndVal(1f, 9f),
+            ["angularSpeed"] = new SkillsBaseAndVal(1f, 200f),
             //["foodAspect"] = new SkillsBaseAndVal(1f, 1f),
             ["memoryFactor"] = new SkillsBaseAndVal(0.5f, 1f), //
             //["size"] = new SkillsBaseAndVal(1f, 0.5f),
-            ["needEnergyDivide"] = new SkillsBaseAndVal(1f, 16f*20),
+            ["needEnergyDivide"] = new SkillsBaseAndVal(8f, Config.stepsPerEpoch),
         };
     }
 
@@ -69,7 +69,7 @@ public class Genome
         //skills["size"].First = Mathf.Clamp(skills["size"].First, 0.5f, 3f);
         skills["memoryFactor"].First = Mathf.Clamp(skills["memoryFactor"].First, 0.05f, 1f);
 
-        float colorD = 7f / 225f;
+        float colorD = 10f / 225f;
         float colorProb = 0.6f;
         if (UnityEngine.Random.value < colorProb) r = Mathf.Clamp01(r + UnityEngine.Random.Range(-colorD, colorD));
         if (UnityEngine.Random.value < colorProb) g = Mathf.Clamp01(g + UnityEngine.Random.Range(-colorD, colorD));

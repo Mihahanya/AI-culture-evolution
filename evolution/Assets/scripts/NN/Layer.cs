@@ -5,10 +5,11 @@ using UnityEngine;
 
 public class Layer
 {
-    public int outSize, inputSize;
-    public float[,] weights;
-    public float[] biases;
-    public float[] neurons;
+    public int inputSize { get; }
+    public int outSize { get; }
+    public float[,] weights { get; }
+    public float[] biases { get; }
+    public float[] neurons { get; }
 
     public Layer(int inputSize, int outSize)
     {
@@ -21,12 +22,8 @@ public class Layer
 
     public Layer(Layer l) : this(l.inputSize, l.outSize)
     {
-        for (int i = 0; i < outSize; i++) {
-            biases[i] = l.biases[i];
-
-            for (int j = 0; j < inputSize; j++)
-                weights[i, j] = l.weights[i, j];
-        }
+        weights = l.weights.Clone() as float[,];
+        Array.Copy(l.biases, biases, l.biases.Length);
     }
 
     public void calcLayer(float[] inputs)
@@ -58,7 +55,6 @@ public class Layer
 
             for (int j = 0; j < inputSize; j++)
                 weights[i, j] = UnityEngine.Random.Range(min, max);
-            
         }
     }
 
