@@ -10,6 +10,7 @@ using UnityEngine.UI;
 using static UnityEditor.PlayerSettings;
 using static UnityEngine.ParticleSystem;
 using static UnityEngine.UI.Image;
+using Numpy;
 
 public class Display : MonoBehaviour
 {
@@ -148,17 +149,17 @@ public class Display : MonoBehaviour
             var layers = objData.genome.nn.layers;
 
             int t = 0;
-            for (t = 0; t < objData.inputs.Length; t++)
+            for (t = 0; t < objData.inputs.len; t++)
             {
-                var input = (objData.inputs[t] + 1f) / 2f;
+                var input = (float)(objData.inputs[t] + 1f) / 2f;
                 neuronsViss[t].GetComponent<SpriteRenderer>().color = new Color(1f - input, input, 0.5f) / 1.05f;
             }
 
             for (int i = 0; i < layers.Length; i++)
             {
-                for (int j = 0; j < layers[i].neurons.Length; j++)
+                for (int j = 0; j < layers[i].neurons.len; j++)
                 {
-                    var neuron = layers[i].neurons[j];
+                    var neuron = (float)layers[i].neurons[j];
                     var neuronInterpolated = (neuron + 1f) / 2f;
 
                     neuronsViss[t].GetComponent<SpriteRenderer>().color = new Color(1f - neuronInterpolated, neuronInterpolated, 0.5f) / 1.05f;
@@ -249,8 +250,8 @@ public class Display : MonoBehaviour
         float amplitude = 0;
         for (int i = 0; i < nn.layers.Length; i++)
         {
-            float currentAmplitude = nn.layers[i].weights.Cast<float>().Max();
-            currentAmplitude = Mathf.Max(-nn.layers[i].weights.Cast<float>().Min(), currentAmplitude);
+            float currentAmplitude = (float)np.max(nn.layers[i].weights);
+            currentAmplitude = Mathf.Max(-(float)np.min(nn.layers[i].weights), currentAmplitude);
 
             amplitude = Mathf.Max(amplitude, currentAmplitude);
         }
@@ -271,8 +272,8 @@ public class Display : MonoBehaviour
                                               wi * visualizationSizes.y / (sizes[i + 1] - 1 + 1), 0f);
 
                     float w;
-                    if (wj == sizes[i]) w = nn.layers[i].biases[wi];
-                    else w = weights[wi, wj];
+                    if (wj == sizes[i]) w = (float)nn.layers[i].biases[wi];
+                    else w = (float)weights[wi][wj];
 
                     float aspect = w / amplitude;
                     float thickness = Mathf.Max(Mathf.Abs(aspect) * neuronsRadius, 2f);

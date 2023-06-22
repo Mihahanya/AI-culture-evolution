@@ -2,46 +2,37 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Numpy;
 
 public class Layer
 {
     public int inputSize { get; }
     public int outSize { get; }
-    public float[,] weights { get; }
-    public float[] biases { get; }
-    public float[] neurons { get; }
+    public NDarray weights;
+    public NDarray biases;
+    public NDarray neurons;
 
     public Layer(int inputSize, int outSize)
     {
         this.outSize = outSize;
         this.inputSize = inputSize;
-        neurons = new float[outSize];
-        weights = new float[outSize, inputSize];
-        biases = new float[outSize];
+        neurons = np.zeros(outSize);
+        weights = np.zeros(outSize, inputSize);
+        biases = np.zeros(outSize);
     }
 
     public Layer(Layer l) : this(l.inputSize, l.outSize)
     {
-        weights = l.weights.Clone() as float[,];
-        Array.Copy(l.biases, biases, l.biases.Length);
+        weights = np.copy(l.weights);
+        biases = np.copy(l.biases);
     }
 
-    public void calcLayer(float[] inputs)
+    public void calcLayer(NDarray inputs)
     {
-        Debug.Assert(inputs.Length == inputSize);
-
-        for (int i = 0; i < outSize; i++)
-        {
-            neurons[i] = biases[i];
-
-            for (int j = 0; j < inputSize; j++)
-                neurons[i] += inputs[j] * weights[i, j];
-            
-            neurons[i] = (float)Math.Tanh(neurons[i]);
-        }
+        neurons = np.tanh(np.dot(weights, inputs) + biases);
     }
 
-    public float[] calcLayerVals(float[] inputs)
+    public NDarray calcLayerVals(NDarray inputs)
     {
         calcLayer(inputs);
         return neurons;
@@ -49,27 +40,28 @@ public class Layer
 
     public void initRandom(float min, float max)
     {
-        for (int i = 0; i < outSize; i++)
-        {
-            biases[i] = UnityEngine.Random.Range(min, max);
-
-            for (int j = 0; j < inputSize; j++)
-                weights[i, j] = UnityEngine.Random.Range(min, max);
-        }
+        //weights = np.random.randn(outSize, inputSize);
+        //biases = np.random.randn(outSize);
+        weights = np.random.rand(outSize, inputSize) * 2f - 1f;
+        biases = np.random.rand(outSize) * 2f - 1f;
     }
 
     public void mutateLayer(float mutationAmplitude, float probability)
     {
-        for (int i = 0; i < outSize; i++)
-        {
-            if (UnityEngine.Random.value < probability)
-                biases[i] += UnityEngine.Random.Range(-mutationAmplitude, mutationAmplitude);
-
-            for (int j = 0; j < inputSize; j++)
-            {
-                if (UnityEngine.Random.value < probability) 
-                    weights[i, j] += UnityEngine.Random.Range(-mutationAmplitude, mutationAmplitude);
-            }
-        }
+        var mask = np.random.choice(
+            new float[] { 1f, 0f }, 
+            new int[] {inputSize, outSize}, 
+            true, 
+            new float[] {probability, 1f - probability}
+        );
+        weights += mask * (np.random.rand(inputSize, outSize) * 2f - 1f) * mutationAmplitude;
+        
+        var biasMask = np.random.choice(
+            new float[] { 1f, 0f }, 
+            new int[] {inputSize}, 
+            true, 
+            new float[] {probability, 1f - probability}
+        );
+        biases += biasMask * (np.random.rand(inputSize) * 2f - 1f) * mutationAmplitude;
     }
 }

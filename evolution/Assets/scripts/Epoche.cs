@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEditor.PackageManager;
 using UnityEngine;
+using Numpy;
 
 
 public class Epoch
@@ -13,21 +14,25 @@ public class Epoch
     public int size;
     
     public float[] rewards;
-    public float[][] inputs;
-    public float[][] outputs;
+    public NDarray inputs;
+    public NDarray outputs;
 
     private int epochI = 0;
 
     public Epoch(int size) 
     { 
         this.size = size;
-        inputs = new float[size][];
-        outputs = new float[size][];
         rewards = new float[size];
     }
 
-    public void AddEpoch(float[] input, float[] output, float reward)
+    public void AddEpoch(NDarray input, NDarray output, float reward)
     {
+        if (epochI == 0)
+        {
+            inputs = np.zeros(size, input.len);
+            outputs = np.zeros(size, output.len);
+        }
+
         inputs[epochI] = input;
         outputs[epochI] = output;
         rewards[epochI] = reward;
@@ -41,38 +46,33 @@ public class Epoch
 
     public void Apply(ref NN nn)
     {
-        float[][] des = new float[size][];
-
         UnityEngine.Debug.Log("Reward summ: " + rewards.Sum());
 
-        float[] discountedReward = NormRewards(rewards);
-        
-        for (int i = 0; i < size; i++)
-        {
-            float[] outs = outputs[i];
-            float[] explicitOuts = ToExplicitOutput(outs);
+        NDarray discountedReward = NormRewards(rewards);
+        NDarray explicitOuts = ToExplicitOutput(outputs);
+        NDarray des = ((explicitOuts - outputs).T * discountedReward).T * 0.002f;
 
-            des[i] = new float[outs.Length];
-            for (int j = 0; j < outs.Length; j++)
-            {
-                des[i][j] = (explicitOuts[j] - outs[j]) * discountedReward[i] * 0.002f;
-            }
-        }
+        //for (int i = 0; i < size; i++)
+        //{
+        //    NDarray outs = outputs[i];
+        //    NDarray explicitOuts = ToExplicitOutput(outs);
+        //
+        //    for (int j = 0; j < outs.len; j++)
+        //    {
+        //        des[i][j] = (NDarray)((explicitOuts[j] - outs[j]) * discountedReward[i] * 0.002f);
+        //    }
+        //}
 
         nn.BackProp(inputs, des);
 
         epochI = 0;
     }
 
-    float[] ToExplicitOutput(float[] outputs)
+    NDarray ToExplicitOutput(NDarray outputs)
     {
-        float[] outp = new float[outputs.Length];
-
-        for (int i = 0; i < outputs.Length; i++)
-        {
-            if (outputs[i] < 0f) outp[i] = -1f;
-            else outp[i] = 1f;
-        }
+        NDarray outp = np.copy(outputs);
+        outp[outp < 0] = (NDarray)(-1);
+        outp[outp >= 0] = (NDarray)(1);
 
         return outp;
     }

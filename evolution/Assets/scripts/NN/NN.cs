@@ -1,3 +1,4 @@
+using Numpy;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -27,12 +28,9 @@ public class NN
         sizes = nn.sizes;
         layers = new Layer[nn.layers.Length];
         Array.Copy(nn.layers, layers, nn.layers.Length);
-
-        //for (int i = 0; i < nn.layers.Length; i++)
-        //    layers[i] = new Layer(nn.layers[i]);
     }
 
-    public float[] FeedForward(float[] inputs)
+    public NDarray FeedForward(NDarray inputs)
     {
         layers[0].calcLayer(inputs);
 
@@ -44,77 +42,60 @@ public class NN
         return layers[layers.Length-1].neurons;
     }
 
-    public float[] ExplicitOutput()
+    public NDarray ExplicitOutput()
     {
-        float[] lastLayerNeurons = layers[layers.Length - 1].neurons;
-        float[] outp = new float[lastLayerNeurons.Length];
-
-        for (int i = 0; i < lastLayerNeurons.Length;i++)
-        {
-            float outval = lastLayerNeurons[i];
-            //if (outval <= -1f / 6f) outp[i] = -1;
-            //else if (outval >= 1f / 6f) outp[i] = 1;
-            //else outp[i] = 0;
-
-            if (outval < 0f) outp[i] = -1f;
-            else outp[i] = 1f;
-        }
+        NDarray outp = np.copy(layers[layers.Length - 1].neurons);
+        outp[outp < 0] = (NDarray)(-1);
+        outp[outp >= 0] = (NDarray)(1);
 
         return outp;
     }
 
-    public void BackProp(float[][] inputs, float[][] errors)
+    public void BackProp(NDarray inputs, NDarray errors)
     {
+        return;
+
         Layer[] newLayers = new Layer[layers.Length];
         Array.Copy(layers, newLayers, layers.Length);
         //for (int i = 0; i < sizes.Length; i++)
         //    newLayers[i] = new Layer(layers[i]);
 
-        for (int t = 0; t < errors.Length; t++) // go through batch
+        for (int t = 0; t < errors.len; t++) // go through batch
         { 
-            float[] input = inputs[t];
-            float[] error = errors[t];
+            var input = inputs[t];
+            var error = errors[t];
 
-            float[] _ = FeedForward(input); // to take neurons states
+            var _ = FeedForward(input); // to take neurons states
 
             for (int k = layers.Length - 1; k >= 0; k--) // through layers
             {
                 Layer l = layers[k];
 
-                float[] prevNeurons;
+                NDarray prevNeurons;
                 if (k != 0) prevNeurons = layers[k - 1].neurons;
                 else prevNeurons = input;
 
                 // Update weights
-                for (int i = 0; i < l.outSize; i++)
-                {
-                    for (int j = 0; j < l.inputSize; j++)
-                    {
-                        newLayers[k].weights[i, j] += prevNeurons[j] * error[i] * arctanh(l.neurons[i]);
-                    }
-                    newLayers[k].biases[i] += error[i] * arctanh(l.neurons[i]);
-                }
+
+                var wGradients = np.outer(error, prevNeurons);
+
+                var bGradients = error;
+
+                newLayers[k].weights += wGradients;
+                newLayers[k].biases += bGradients;
 
                 // Errors for the next layers
-                float[] nextErrors = new float[l.inputSize];
-                for (int i = 0; i < l.inputSize; i++)
-                {
-                    for (int j = 0; j < l.outSize; j++)
-                    {
-                        nextErrors[i] += error[j] * l.weights[j, i];
-                    }
-                }
-                error = new float[l.inputSize];
-                Array.Copy(nextErrors, error, nextErrors.Length);
+                
+                error = np.dot(l.weights.T, error);
             }
         }
 
-        for (int i = 0; i <  layers.Length; i++)
-        {
+        //for (int i = 0; i <  layers.Length; i++)
+        //{
+        //
+        //}
 
-        }
-
-        //Array.Copy(newLayers, layers, newLayers.Length);
+        Array.Copy(newLayers, layers, newLayers.Length);
     }
 
     float arctanh(float x)

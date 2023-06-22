@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Numpy;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+
 
 public class Agent : MonoBehaviour
 {
@@ -30,9 +32,9 @@ public class Agent : MonoBehaviour
     float speed, angSpeed, foodProd, memoryFactor;
 
     [NonSerialized]
-    public float[] inputs;
+    public NDarray inputs;
     [NonSerialized]
-    public float[] outputs;
+    public NDarray outputs;
     [NonSerialized]
     public float reward = 0;
 
@@ -41,8 +43,8 @@ public class Agent : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
 
-        inputs = new float[inputCount];
-        outputs = new float[outputCount];
+        inputs = np.zeros(inputCount);
+        outputs = np.zeros(outputCount);
 
         epoch = new Epoch(Config.stepsPerEpoch);
 
@@ -72,7 +74,7 @@ public class Agent : MonoBehaviour
         if (exhaustion) energy -= 1f;
 
 
-        float[] newInputs = new float[inputCount];
+        var newInputs = np.zeros(inputCount);
 
         float maxDist = 15f;
 
@@ -88,7 +90,7 @@ public class Agent : MonoBehaviour
             RaycastHit2D hit = Physics2D.Raycast(from, direction, maxDist);
             if (hit)
             {
-                newInputs[i] = 1f - hit.distance / maxDist;
+                newInputs[i] = (NDarray)(1f - hit.distance / maxDist);
 
                 Color hitColor = hit.transform.gameObject.GetComponent<SpriteRenderer>().color;
 
@@ -105,7 +107,7 @@ public class Agent : MonoBehaviour
             }
             else
             {
-                newInputs[i] = 0;
+                newInputs[i] = (NDarray)0;
                 //newInputs[i * 4 + 1] = -1;
                 //newInputs[i * 4 + 2] = -1;
                 //newInputs[i * 4 + 3] = -1;
@@ -114,15 +116,15 @@ public class Agent : MonoBehaviour
 
         if (findedRays_n > 0)
         {
-            newInputs[eyesCount + 0] = midColR / findedRays_n;
-            newInputs[eyesCount + 1] = midColG / findedRays_n;
-            newInputs[eyesCount + 2] = midColB / findedRays_n;
+            newInputs[eyesCount + 0] = (NDarray)(midColR / findedRays_n);
+            newInputs[eyesCount + 1] = (NDarray)(midColG / findedRays_n);
+            newInputs[eyesCount + 2] = (NDarray)(midColB / findedRays_n);
         }
         else
         {
-            newInputs[eyesCount + 0] = -1;
-            newInputs[eyesCount + 1] = -1;
-            newInputs[eyesCount + 2] = -1;
+            newInputs[eyesCount + 0] = (NDarray)(-1);
+            newInputs[eyesCount + 1] = (NDarray)(-1);
+            newInputs[eyesCount + 2] = (NDarray)(-1);
         }
 
         for (int i = 0; i < memoryNeurons; i++)
@@ -145,10 +147,10 @@ public class Agent : MonoBehaviour
         float fps = Config.fps;
         if (Config.fps > 1f / Time.deltaTime) fps = 1f / Time.deltaTime;
 
-        rb.velocity = RotateVector(new Vector2(outputs[0], outputs[1]) * speed, transform.localEulerAngles.z) * fps / Config.stepsPerEpoch;
-        rb.angularVelocity = outputs[2] * angSpeed * fps / Config.stepsPerEpoch;
+        rb.velocity = RotateVector(new Vector2((float)outputs[0], (float)outputs[1]) * speed, transform.localEulerAngles.z) * fps / Config.stepsPerEpoch;
+        rb.angularVelocity = (float)outputs[2] * angSpeed * fps / Config.stepsPerEpoch;
 
-        if (outputs[3] > 0.5f && energy >= genome.GetActualSkill("needEnergyDivide"))
+        if ((float)outputs[3] > 0.5f && energy >= genome.GetActualSkill("needEnergyDivide"))
             DivideYourself();
 
         // Movement coasts
@@ -156,8 +158,8 @@ public class Agent : MonoBehaviour
         if (exhaustion)
         {
             var consumption = 0f;
-            consumption += new Vector2(outputs[0], outputs[1]).magnitude * Mathf.Abs(genome.skills["speed"].First);
-            consumption += Mathf.Abs(outputs[2]) * Mathf.Abs(genome.skills["angularSpeed"].First);
+            consumption += new Vector2((float)outputs[0], (float)outputs[1]).magnitude * Mathf.Abs(genome.skills["speed"].First);
+            consumption += Mathf.Abs((float)outputs[2]) * Mathf.Abs(genome.skills["angularSpeed"].First);
         
             //consumption *= Mathf.Pow(genome.skills["size"].First, 2f) * 0.35f;
             consumption *= 0.2f;
