@@ -1,5 +1,4 @@
-﻿using Numpy;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -32,9 +31,9 @@ public class Agent : MonoBehaviour
     float speed, angSpeed, foodProd, memoryFactor;
 
     [NonSerialized]
-    public NDarray inputs;
+    public double[] inputs;
     [NonSerialized]
-    public NDarray outputs;
+    public double[] outputs;
     [NonSerialized]
     public float reward = 0;
 
@@ -43,8 +42,8 @@ public class Agent : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
 
-        inputs = np.zeros(inputCount);
-        outputs = np.zeros(outputCount);
+        inputs = new double[inputCount];
+        outputs = new double[outputCount];
 
         epoch = new Epoch(Config.stepsPerEpoch);
 
@@ -74,7 +73,7 @@ public class Agent : MonoBehaviour
         if (exhaustion) energy -= 1f;
 
 
-        var newInputs = np.zeros(inputCount);
+        var newInputs = new double[inputCount];
 
         float maxDist = 15f;
 
@@ -90,7 +89,7 @@ public class Agent : MonoBehaviour
             RaycastHit2D hit = Physics2D.Raycast(from, direction, maxDist);
             if (hit)
             {
-                newInputs[i] = (NDarray)(1f - hit.distance / maxDist);
+                newInputs[i] = (1f - hit.distance / maxDist);
 
                 Color hitColor = hit.transform.gameObject.GetComponent<SpriteRenderer>().color;
 
@@ -107,7 +106,7 @@ public class Agent : MonoBehaviour
             }
             else
             {
-                newInputs[i] = (NDarray)0;
+                newInputs[i] = 0;
                 //newInputs[i * 4 + 1] = -1;
                 //newInputs[i * 4 + 2] = -1;
                 //newInputs[i * 4 + 3] = -1;
@@ -116,15 +115,15 @@ public class Agent : MonoBehaviour
 
         if (findedRays_n > 0)
         {
-            newInputs[eyesCount + 0] = (NDarray)(midColR / findedRays_n);
-            newInputs[eyesCount + 1] = (NDarray)(midColG / findedRays_n);
-            newInputs[eyesCount + 2] = (NDarray)(midColB / findedRays_n);
+            newInputs[eyesCount + 0] = (midColR / findedRays_n);
+            newInputs[eyesCount + 1] = (midColG / findedRays_n);
+            newInputs[eyesCount + 2] = (midColB / findedRays_n);
         }
         else
         {
-            newInputs[eyesCount + 0] = (NDarray)(-1);
-            newInputs[eyesCount + 1] = (NDarray)(-1);
-            newInputs[eyesCount + 2] = (NDarray)(-1);
+            newInputs[eyesCount + 0] = (-1);
+            newInputs[eyesCount + 1] = (-1);
+            newInputs[eyesCount + 2] = (-1);
         }
 
         for (int i = 0; i < memoryNeurons; i++)
@@ -178,16 +177,16 @@ public class Agent : MonoBehaviour
 
         if (encourage)
         {
-            //var foods = GameObject.FindGameObjectsWithTag("food");
-            //float minDist = 5;
-            //foreach (var f in foods)
-            //{
-            //    float d = Vector2.Distance(f.transform.position, transform.position);
-            //    if (d < minDist)
-            //        minDist = d;
-            //}
+            var foods = GameObject.FindGameObjectsWithTag("food");
+            float minDist = 5;
+            foreach (var f in foods)
+            {
+                float d = Vector2.Distance(f.transform.position, transform.position);
+                if (d < minDist)
+                    minDist = d;
+            }
 
-            //reward += (1f / (minDist + 1) - 1f / (5 + 1)) * 0.02f;
+            reward += (1f / (minDist + 1) - 1f / (5 + 1)) * 0.02f;
 
             //reward += findedRays_n / eyesCount * 0.001f;
 

@@ -69,22 +69,22 @@
      <None Include="Assets\Packages\System.IO.4.3.0\dotnet_library_license.txt" />
      <None Include="Assets\Packages\Microsoft.NETCore.Targets.1.1.0\ThirdPartyNotices.txt" />
      <None Include="Assets\Packages\System.Reflection.Emit.4.3.0\ThirdPartyNotices.txt" />
-     <None Include="Assets\Packages\Microsoft.CSharp.4.7.0\lib\netstandard2.0\Microsoft.CSharp.xml" />
      <None Include="Assets\Packages\System.Reflection.4.3.0\dotnet_library_license.txt" />
      <None Include="Assets\Packages\System.Reflection.Primitives.4.3.0\ThirdPartyNotices.txt" />
      <None Include="Assets\Packages\System.Text.Encoding.4.3.0\ThirdPartyNotices.txt" />
-     <None Include="Assets\Packages\pythonnet.3.0.1\lib\netstandard2.0\Python.Runtime.xml" />
      <None Include="Assets\Packages\System.IO.4.3.0\ThirdPartyNotices.txt" />
      <None Include="Assets\Packages\System.Reflection.4.3.0\ThirdPartyNotices.txt" />
+     <None Include="Assets\Packages\Accord.Math.3.8.0\lib\netstandard2.0\Accord.Math.xml" />
      <None Include="Assets\Packages\System.Threading.Tasks.4.3.0\dotnet_library_license.txt" />
-     <None Include="Assets\Packages\Microsoft.CSharp.4.7.0\version.txt" />
      <None Include="Assets\Packages\Microsoft.NETCore.Targets.1.1.0\dotnet_library_license.txt" />
+     <None Include="Assets\Packages\Accord.Math.3.8.0\lib\netstandard2.0\Accord.Math.Core.xml" />
      <None Include="Assets\Packages\System.Reflection.Primitives.4.3.0\dotnet_library_license.txt" />
-     <None Include="Assets\Packages\Microsoft.CSharp.4.7.0\useSharedDesignerContext.txt" />
      <None Include="Assets\Packages\System.Text.Encoding.4.3.0\dotnet_library_license.txt" />
      <None Include="Assets\Packages\System.Runtime.4.3.0\dotnet_library_license.txt" />
      <None Include="Assets\Packages\System.Runtime.4.3.0\ThirdPartyNotices.txt" />
      <None Include="Assets\Packages\System.Reflection.Emit.4.3.0\dotnet_library_license.txt" />
+     <None Include="Assets\Packages\Accord.Statistics.3.8.0\lib\netstandard2.0\Accord.Statistics.xml" />
+     <None Include="Assets\Packages\Accord.3.8.0\lib\netstandard2.0\Accord.xml" />
  <Reference Include="Unity.TextMeshPro.Editor">
  <HintPath>D:/PROJECTS/AI-culture-evolution/evolution/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
  </Reference>
@@ -301,20 +301,17 @@
  <Reference Include="UnityEngine.SpatialTracking">
  <HintPath>D:/PROGRAMS/Editor/Data/UnityExtensions/Unity/UnitySpatialTracking/RuntimeEditor/UnityEngine.SpatialTracking.dll</HintPath>
  </Reference>
- <Reference Include="Microsoft.CSharp">
- <HintPath>D:/PROJECTS/AI-culture-evolution/evolution/Assets/Packages/Microsoft.CSharp.4.7.0/lib/netstandard2.0/Microsoft.CSharp.dll</HintPath>
+ <Reference Include="Accord">
+ <HintPath>D:/PROJECTS/AI-culture-evolution/evolution/Assets/Packages/Accord.3.8.0/lib/netstandard2.0/Accord.dll</HintPath>
  </Reference>
- <Reference Include="Numpy">
- <HintPath>D:/PROJECTS/AI-culture-evolution/evolution/Assets/Packages/Numpy.3.11.1.33/lib/netstandard2.0/Numpy.dll</HintPath>
+ <Reference Include="Accord.Math.Core">
+ <HintPath>D:/PROJECTS/AI-culture-evolution/evolution/Assets/Packages/Accord.Math.3.8.0/lib/netstandard2.0/Accord.Math.Core.dll</HintPath>
  </Reference>
- <Reference Include="Python.Deployment">
- <HintPath>D:/PROJECTS/AI-culture-evolution/evolution/Assets/Packages/Python.Deployment.2.0.0/lib/netstandard2.0/Python.Deployment.dll</HintPath>
+ <Reference Include="Accord.Math">
+ <HintPath>D:/PROJECTS/AI-culture-evolution/evolution/Assets/Packages/Accord.Math.3.8.0/lib/netstandard2.0/Accord.Math.dll</HintPath>
  </Reference>
- <Reference Include="Python.Included">
- <HintPath>D:/PROJECTS/AI-culture-evolution/evolution/Assets/Packages/Python.Included.3.11.1/lib/netstandard2.0/Python.Included.dll</HintPath>
- </Reference>
- <Reference Include="Python.Runtime">
- <HintPath>D:/PROJECTS/AI-culture-evolution/evolution/Assets/Packages/pythonnet.3.0.1/lib/netstandard2.0/Python.Runtime.dll</HintPath>
+ <Reference Include="Accord.Statistics">
+ <HintPath>D:/PROJECTS/AI-culture-evolution/evolution/Assets/Packages/Accord.Statistics.3.8.0/lib/netstandard2.0/Accord.Statistics.dll</HintPath>
  </Reference>
  <Reference Include="System.Reflection.Emit">
  <HintPath>D:/PROJECTS/AI-culture-evolution/evolution/Assets/Packages/System.Reflection.Emit.4.3.0/lib/netstandard1.3/System.Reflection.Emit.dll</HintPath>

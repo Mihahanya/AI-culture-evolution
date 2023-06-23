@@ -2,66 +2,71 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Numpy;
+using Accord.Math;
+using Accord.Math.Random;
+
 
 public class Layer
 {
     public int inputSize { get; }
     public int outSize { get; }
-    public NDarray weights;
-    public NDarray biases;
-    public NDarray neurons;
+    public double[,] weights;
+    public double[] biases;
+    public double[] neurons;
 
     public Layer(int inputSize, int outSize)
     {
         this.outSize = outSize;
         this.inputSize = inputSize;
-        neurons = np.zeros(outSize);
-        weights = np.zeros(outSize, inputSize);
-        biases = np.zeros(outSize);
+        neurons = Vector.Zeros(outSize);
+        weights = Matrix.Zeros(outSize, inputSize);
+        biases = Vector.Zeros(outSize);
     }
 
     public Layer(Layer l) : this(l.inputSize, l.outSize)
     {
-        weights = np.copy(l.weights);
-        biases = np.copy(l.biases);
+        weights = Matrix.Copy(l.weights);
+        biases = Vector.Copy(l.biases);
     }
 
-    public void calcLayer(NDarray inputs)
+    public void calcLayer(double[] inputs)
     {
-        neurons = np.tanh(np.dot(weights, inputs) + biases);
+        neurons = Vector.Zeros(outSize);
+        neurons = Matrix.Dot(weights, inputs);
+        neurons = neurons.Add(biases);
+        neurons = Matrix.Apply(neurons, Math.Tanh);
     }
 
-    public NDarray calcLayerVals(NDarray inputs)
+    public double[] calcLayerVals(double[] inputs)
     {
         calcLayer(inputs);
         return neurons;
     }
 
-    public void initRandom(float min, float max)
+    public void initRandom(double min, double max)
     {
-        //weights = np.random.randn(outSize, inputSize);
-        //biases = np.random.randn(outSize);
-        weights = np.random.rand(outSize, inputSize) * 2f - 1f;
-        biases = np.random.rand(outSize) * 2f - 1f;
+        weights = Matrix.Random(outSize, inputSize).Multiply(2).Add(-1).Multiply(max);
+        biases = Vector.Random(outSize).Multiply(2).Add(-1).Multiply(max);
     }
 
-    public void mutateLayer(float mutationAmplitude, float probability)
+    public void Reset()
     {
-        var mask = np.random.choice(
-            new float[] { 1f, 0f }, 
-            new int[] {inputSize, outSize}, 
-            true, 
-            new float[] {probability, 1f - probability}
-        );
-        weights += mask * (np.random.rand(inputSize, outSize) * 2f - 1f) * mutationAmplitude;
-        
-        var biasMask = np.random.choice(
-            new float[] { 1f, 0f }, 
-            new int[] {inputSize}, 
-            true, 
-            new float[] {probability, 1f - probability}
-        );
-        biases += biasMask * (np.random.rand(inputSize) * 2f - 1f) * mutationAmplitude;
+        neurons = Vector.Zeros(outSize);
+        weights = Matrix.Zeros(outSize, inputSize);
+        biases = Vector.Zeros(outSize);
+    }
+
+    public void mutateLayer(double mutationAmplitude, double probability)
+    {
+        Func<double, double> fillAndInterpolate = (x) => UnityEngine.Random.value < probability ? (x * 2 - 1) * mutationAmplitude : 0;
+
+        var weightsMask = Matrix.Random(inputSize, outSize);
+        weightsMask = weightsMask.Apply(fillAndInterpolate);
+
+        var biasMask = Vector.Random(outSize);
+        biasMask = biasMask.Apply(fillAndInterpolate);
+
+        weights = weights.Add(weightsMask);
+        biases = biases.Add(biasMask);
     }
 }

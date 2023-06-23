@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Accord.Math;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ using UnityEngine.UI;
 using static UnityEditor.PlayerSettings;
 using static UnityEngine.ParticleSystem;
 using static UnityEngine.UI.Image;
-using Numpy;
+
 
 public class Display : MonoBehaviour
 {
@@ -149,7 +150,7 @@ public class Display : MonoBehaviour
             var layers = objData.genome.nn.layers;
 
             int t = 0;
-            for (t = 0; t < objData.inputs.len; t++)
+            for (t = 0; t < objData.inputs.Length; t++)
             {
                 var input = (float)(objData.inputs[t] + 1f) / 2f;
                 neuronsViss[t].GetComponent<SpriteRenderer>().color = new Color(1f - input, input, 0.5f) / 1.05f;
@@ -157,7 +158,7 @@ public class Display : MonoBehaviour
 
             for (int i = 0; i < layers.Length; i++)
             {
-                for (int j = 0; j < layers[i].neurons.len; j++)
+                for (int j = 0; j < layers[i].neurons.Length; j++)
                 {
                     var neuron = (float)layers[i].neurons[j];
                     var neuronInterpolated = (neuron + 1f) / 2f;
@@ -168,7 +169,7 @@ public class Display : MonoBehaviour
                 }
             }
 
-            UpdateWeights(objData.genome.nn);
+            if (objData.epoch.IsDone()) UpdateWeights(objData.genome.nn);
 
             dataOut.text = "";
             dataOut.text += "Energy: " + objData.energy + "\n";
@@ -215,7 +216,7 @@ public class Display : MonoBehaviour
             {
                 GameObject neuronVisual = (GameObject)UnityEngine.Object.Instantiate(circle);
                 neuronVisual.transform.parent = neuronOrient.transform;
-                neuronVisual.transform.localScale = Vector3.one * neuronsRadius;
+                neuronVisual.transform.localScale = UnityEngine.Vector3.one * neuronsRadius;
                 neuronVisual.GetComponent<SpriteRenderer>().color = new Color(0f, 1f, 0.5f);
 
                 Vector2 pos = new Vector2(i * visualizationSizes.x / (sizes.Length-1), j * visualizationSizes.y / (sizes[i]-1+1)); // +1 because bias
@@ -223,7 +224,7 @@ public class Display : MonoBehaviour
                 neuronVisual.AddComponent<RectTransform>();
                 RectTransform p = neuronVisual.GetComponent<RectTransform>();
                 p.anchoredPosition = pos - visualizationSizes / 2f;
-                p.anchoredPosition3D = new Vector3(p.anchoredPosition.x, -p.anchoredPosition.y, 0f);
+                p.anchoredPosition3D = new UnityEngine.Vector3(p.anchoredPosition.x, -p.anchoredPosition.y, 0f);
 
                 if (j != sizes[i])
                 {
@@ -247,13 +248,13 @@ public class Display : MonoBehaviour
 
         // Weight max deviation
 
-        float amplitude = 0;
+        double amplitude = 0;
         for (int i = 0; i < nn.layers.Length; i++)
         {
-            float currentAmplitude = (float)np.max(nn.layers[i].weights);
-            currentAmplitude = Mathf.Max(-(float)np.min(nn.layers[i].weights), currentAmplitude);
+            double currentAmplitude = Matrix.Max(nn.layers[i].weights);
+            currentAmplitude = Math.Max(Matrix.Min(nn.layers[i].weights), currentAmplitude);
 
-            amplitude = Mathf.Max(amplitude, currentAmplitude);
+            amplitude = Math.Max(amplitude, currentAmplitude);
         }
 
         // Weights lines
@@ -265,17 +266,17 @@ public class Display : MonoBehaviour
             {
                 for (int wj = 0; wj < sizes[i] + 1; wj++) // Starts
                 {
-                    Vector3 start = new Vector3(i * visualizationSizes.x / (sizes.Length - 1),
+                    UnityEngine.Vector3 start = new UnityEngine.Vector3(i * visualizationSizes.x / (sizes.Length - 1),
                                                 wj * visualizationSizes.y / (sizes[i] - 1 + 1), 0f);
 
-                    Vector3 end = new Vector3((i + 1) * visualizationSizes.x / (sizes.Length - 1),
+                    UnityEngine.Vector3 end = new UnityEngine.Vector3((i + 1) * visualizationSizes.x / (sizes.Length - 1),
                                               wi * visualizationSizes.y / (sizes[i + 1] - 1 + 1), 0f);
 
-                    float w;
-                    if (wj == sizes[i]) w = (float)nn.layers[i].biases[wi];
-                    else w = (float)weights[wi][wj];
+                    double w;
+                    if (wj == sizes[i]) w = nn.layers[i].biases[wi];
+                    else w = weights[wi, wj];
 
-                    float aspect = w / amplitude;
+                    float aspect = (float)((float)w / amplitude);
                     float thickness = Mathf.Max(Mathf.Abs(aspect) * neuronsRadius, 2f);
 
                     float aspectInterpolated = (aspect + 1f) / 2f;
@@ -297,8 +298,8 @@ public class Display : MonoBehaviour
         p.SetParent(nnp);
         p.anchoredPosition = Vector2.zero;
         p.sizeDelta = nnp.sizeDelta;
-        p.localScale = Vector3.one;
-        p.anchoredPosition3D = new Vector3(p.anchoredPosition.x, p.anchoredPosition.y, 1f);
+        p.localScale = UnityEngine.Vector3.one;
+        p.anchoredPosition3D = new UnityEngine.Vector3(p.anchoredPosition.x, p.anchoredPosition.y, 1f);
 
         LineRenderer lr = myLine.GetComponent<LineRenderer>();
         lr.SetColors(color, color);
