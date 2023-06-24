@@ -1,14 +1,8 @@
 ﻿using Accord.Math;
 using Accord.Statistics;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using UnityEditor.PackageManager;
-using UnityEngine;
 
 
 public class Epoch
@@ -18,6 +12,8 @@ public class Epoch
     public double[] rewards;
     public double[][] inputs;
     public double[][] outputs;
+
+    public double gamma = 0.9;
 
     private int epochI = 0;
 
@@ -46,22 +42,26 @@ public class Epoch
     {
         UnityEngine.Debug.Log("Reward summ: " + rewards.Sum());
 
-        double[] discountedReward = NormRewards(rewards);
-        var rewMatrix = Matrix.Create(discountedReward.Length, 1, discountedReward);
+        var outs = Matrix.ToMatrix(outputs);
 
-        double[,] explicitOuts = ToExplicitOutput(outputs);
-        
-        double[,] des = explicitOuts.Subtract(Matrix.ToMatrix(outputs));
-        des = des.Transpose().Dot(rewMatrix).Transpose();
+        double[,] explicitOuts = ToExplicitOutput(outs);
+
+        double[,] des = explicitOuts.Subtract(outs);
+
+        double[] discountedReward = NormRewards(rewards);
+        var rewMap = discountedReward.Outer(Accord.Math.Vector.Ones(des.GetLength(1)));
+        //des = des.Transpose().Dot(rewMatrix).Transpose();
+
+        des = des.Multiply(rewMap);
 
         nn.BackProp(inputs, des.ToJagged());
 
         epochI = 0;
     }
 
-    double[,] ToExplicitOutput(double[][] outputs)
+    double[,] ToExplicitOutput(double[,] outputs)
     {
-        double[,] outp = Matrix.ToMatrix(outputs);
+        double[,] outp = Matrix.Copy(outputs);
         outp = outp.Apply(x => x < 0d ? -1d : 1d);
 
         return outp;
@@ -69,14 +69,14 @@ public class Epoch
 
     double[] NormRewards(double[] rews)
     {
-        double[] newRews = new double[rews.Length];
+        double[] newRews = Accord.Math.Vector.Zeros(rews.Length);
 
         // Spreading reward for the previous actions
         double runningAdd = 0;
         for (int i = size - 1; i >= 0; i--)
         {
             if (rews[i] != 0) runningAdd = 0;
-            runningAdd = runningAdd * 0.9f + rews[i];
+            runningAdd = runningAdd * gamma + rews[i];
             newRews[i] = runningAdd;
         }
 

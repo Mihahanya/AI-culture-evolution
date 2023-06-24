@@ -26,7 +26,6 @@ public class NN
             layers[i-1].initRandom(-1f, 1f);
             
             RMSpropCache[i-1] = new Layer(sizes[i-1], sizes[i]);
-            RMSpropCache[i-1].Reset();
         }
     }
 
@@ -38,10 +37,8 @@ public class NN
 
         RMSpropCache = new Layer[layers.Length];
         for (int i = 1; i < sizes.Length; i++)
-        {
             RMSpropCache[i-1] = new Layer(sizes[i-1], sizes[i]);
-            RMSpropCache[i-1].Reset();
-        }
+        
     }
 
     public double[] FeedForward(double[] inputs)
@@ -67,7 +64,9 @@ public class NN
     public void BackProp(double[][] inputs, double[][] errors)
     {
         Layer[] gradBuff = new Layer[layers.Length];
-        Array.Copy(layers, gradBuff, layers.Length);
+        for (int i = 0; i < layers.Length; i++)
+            gradBuff[i] = new Layer(layers[i].inputSize, layers[i].outSize);
+        
         
         for (int t = 0; t < errors.Length; t++) // go through batch
         { 
@@ -103,13 +102,19 @@ public class NN
         for (int i = 0; i < layers.Length; i++)
         {
             double[,] g = Matrix.Copy(gradBuff[i].weights);
-            //var gSqr = g.Apply(x => x * x);
-            //RMSpropCache[i].weights = RMSpropCache[i].weights.Multiply(decayRate).Add(gSqr.Multiply(1d - decayRate));
-            //var rmspropsqrt = RMSpropCache[i].weights.Apply(Math.Sqrt);
-            //layers[i].weights = layers[i].weights.Add(g.Multiply(learningRate).Divide(rmspropsqrt.Add(1e-5)));
+            var gSqr = g.Apply(x => x * x);
+            RMSpropCache[i].weights = RMSpropCache[i].weights.Multiply(decayRate).Add(gSqr.Multiply(1d - decayRate));
+            var rmspropsqrt = RMSpropCache[i].weights.Apply(Math.Sqrt);
+            layers[i].weights = layers[i].weights.Add(g.Multiply(learningRate).Divide(rmspropsqrt.Add(1e-5)));
 
-            layers[i].weights = layers[i].weights.Add(gradBuff[i].weights.Multiply(learningRate));
-            layers[i].biases = layers[i].biases.Add(gradBuff[i].biases.Multiply(learningRate));
+            double[] gB = Vector.Copy(gradBuff[i].biases);
+            double[] gSqrB = gB.Apply(x => x * x);
+            RMSpropCache[i].biases = RMSpropCache[i].biases.Multiply(decayRate).Add(gSqrB.Multiply(1d - decayRate));
+            double[] rmspropsqrtB = RMSpropCache[i].biases.Apply(Math.Sqrt);
+            layers[i].biases = layers[i].biases.Add(gB.Multiply(learningRate).Divide(rmspropsqrtB.Add(1e-5)));
+
+            //layers[i].weights = layers[i].weights.Add(gradBuff[i].weights.Multiply(learningRate));
+            //layers[i].biases = layers[i].biases.Add(gradBuff[i].biases.Multiply(learningRate));
         }
 
         //Array.Copy(newLayers, layers, newLayers.Length);
