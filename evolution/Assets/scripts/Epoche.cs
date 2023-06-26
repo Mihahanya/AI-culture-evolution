@@ -27,9 +27,14 @@ public class Epoch
 
     public void AddEpoch(double[] input, double[] output, double reward)
     {
-        inputs[epochI] = input;
-        outputs[epochI] = output;
+        inputs[epochI] = new double[input.Length];
+        Array.Copy(input, inputs[epochI], input.Length);
+        
+        outputs[epochI] = new double[output.Length];
+        Array.Copy(output, outputs[epochI], output.Length);
+
         rewards[epochI] = reward;
+        
         epochI++;
     }
 
@@ -40,7 +45,9 @@ public class Epoch
 
     public void Apply(ref NN nn)
     {
-        UnityEngine.Debug.Log("Reward summ: " + rewards.Sum());
+        UnityEngine.Debug.Log("Reward summ: " + rewards.Sum().ToString("0.0000"));
+
+        epochI = 0;
 
         var outs = Matrix.ToMatrix(outputs);
 
@@ -55,8 +62,6 @@ public class Epoch
         des = des.Multiply(rewMap);
 
         nn.BackProp(inputs, des.ToJagged());
-
-        epochI = 0;
     }
 
     double[,] ToExplicitOutput(double[,] outputs)
@@ -75,7 +80,8 @@ public class Epoch
         double runningAdd = 0;
         for (int i = size - 1; i >= 0; i--)
         {
-            if (rews[i] != 0) runningAdd = 0;
+            if (Math.Abs(rews[i]) >= Math.Abs(runningAdd) || ((rews[i] < 0) != (runningAdd < 0))) 
+                runningAdd = 0;
             runningAdd = runningAdd * gamma + rews[i];
             newRews[i] = runningAdd;
         }

@@ -36,8 +36,9 @@ public class Display : MonoBehaviour
     Vector2 visualizationSizes;
 
     float timer = 0.1f;
-    int bacteriaCount = 0, prevBacteriaCount = 0;
-    int deaths, borns;
+    public int bacteriaCount = 0;
+    public int deathCount = 0;
+    public int bornCount = 0;
 
     float frameTimer = 1f;
     int framesCount = 0;
@@ -62,14 +63,6 @@ public class Display : MonoBehaviour
     {
         var bacterias = GameObject.FindGameObjectsWithTag("bacteria");
         bacteriaCount = bacterias.Length;
-
-        if (bacteriaCount < prevBacteriaCount)
-            deaths += prevBacteriaCount - bacteriaCount;
-        else if (bacteriaCount > prevBacteriaCount)
-            borns += bacteriaCount - prevBacteriaCount;
-
-        prevBacteriaCount = bacteriaCount;
-
         
         timer -= Time.deltaTime;
         if (timer < 0)
@@ -89,13 +82,13 @@ public class Display : MonoBehaviour
 
             agentsCounter.text = "";
             agentsCounter.text += "Bacteria count: " + bacteriaCount + "\n";
-            agentsCounter.text += "Born : " + borns + "\n";
-            agentsCounter.text += "Death: " + deaths + "\n";
+            agentsCounter.text += "Born : " + bornCount + "\n";
+            agentsCounter.text += "Death: " + deathCount + "\n";
             agentsCounter.text += "Middle Age: " + midAge + "\n";
             agentsCounter.text += "Middle Generation: " + midGeneration + "\n";
 
-            borns = 0;
-            deaths = 0;
+            bornCount = 0;
+            deathCount = 0;
 
             timer = 2f;
         }

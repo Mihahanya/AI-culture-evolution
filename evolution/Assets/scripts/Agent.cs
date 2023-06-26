@@ -24,7 +24,7 @@ public class Agent : MonoBehaviour
     public Epoch epoch;
 
     private const int eyesCount = 6;
-    private const int memoryNeurons = 0;
+    private const int memoryNeurons = 5;
     private const int inputCount = eyesCount + 3 + memoryNeurons + 0; // eyes by distance and colors, ~age/energy, ~energy/age 
     private const int outputCount = 3 + memoryNeurons + 1; // move, divide
 
@@ -89,7 +89,7 @@ public class Agent : MonoBehaviour
             RaycastHit2D hit = Physics2D.Raycast(from, direction, maxDist);
             if (hit)
             {
-                newInputs[i] = (1f - hit.distance / maxDist);
+                newInputs[i] = 1f - hit.distance / maxDist;
 
                 Color hitColor = hit.transform.gameObject.GetComponent<SpriteRenderer>().color;
 
@@ -115,15 +115,15 @@ public class Agent : MonoBehaviour
 
         if (findedRays_n > 0)
         {
-            newInputs[eyesCount + 0] = (midColR / findedRays_n);
-            newInputs[eyesCount + 1] = (midColG / findedRays_n);
-            newInputs[eyesCount + 2] = (midColB / findedRays_n);
+            newInputs[eyesCount + 0] = midColR / findedRays_n;
+            newInputs[eyesCount + 1] = midColG / findedRays_n;
+            newInputs[eyesCount + 2] = midColB / findedRays_n;
         }
         else
         {
-            newInputs[eyesCount + 0] = (-1);
-            newInputs[eyesCount + 1] = (-1);
-            newInputs[eyesCount + 2] = (-1);
+            newInputs[eyesCount + 0] = -1;
+            newInputs[eyesCount + 1] = -1;
+            newInputs[eyesCount + 2] = -1;
         }
 
         for (int i = 0; i < memoryNeurons; i++)
@@ -170,6 +170,7 @@ public class Agent : MonoBehaviour
 
         if (energy <= 0)
         {
+            Camera.main.GetComponent<Display>().deathCount++;
             Destroy(gameObject);
         }
 
@@ -185,8 +186,8 @@ public class Agent : MonoBehaviour
                 if (d < minDist)
                     minDist = d;
             }
-
-            reward += (1f / (minDist + 1) - 1f / (5 + 1)) * 0.02f;
+            
+            reward += (1f / (minDist + 1) - 1f / (5 + 1)) * 0.05f;
 
             //reward += findedRays_n / eyesCount * 0.001f;
 
@@ -194,7 +195,7 @@ public class Agent : MonoBehaviour
 
             if (epoch.IsDone()) epoch.Apply(ref genome.nn);
         }
-        reward = 0;
+        reward = 0f;
     }
 
     void OnTriggerEnter2D(Collider2D col)
@@ -202,7 +203,7 @@ public class Agent : MonoBehaviour
         if (col.gameObject.tag == "food")
         {
             //var fd = genome.GetActualSkill("foodAspect");
-            reward += 1;
+            reward += 1f;
             energy += 2.5f*Config.stepsPerEpoch;
             Destroy(col.gameObject);
         }
@@ -229,12 +230,15 @@ public class Agent : MonoBehaviour
 
         agentMind.energy = energy / 2f;
         energy /= 2f;
+
+        Camera.main.GetComponent<Display>().bornCount++;
     }
 
     void OnCollisionEnter2D(Collision2D col)
     {
         if (col.gameObject.tag == "wall")
         {
+            reward -= 0.5f;
             transform.position = new Vector3(-transform.position.x, -transform.position.y, transform.position.z) + transform.position.normalized;
         }
     }
