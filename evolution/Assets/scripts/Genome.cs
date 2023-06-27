@@ -19,7 +19,7 @@ public class Genome
 
     public Genome(int inputSize, int outputSize)
     {
-        nn = new NN(inputSize, 7, 7, outputSize);
+        nn = new NN(inputSize, 10, 9, outputSize);
 
         r = UnityEngine.Random.Range(0f, 1f);
         g = UnityEngine.Random.Range(0f, 1f);
@@ -32,7 +32,7 @@ public class Genome
             //["foodAspect"] = new SkillsBaseAndVal(1f, 1f),
             ["memoryFactor"] = new SkillsBaseAndVal(0.5f, 1f), //
             //["size"] = new SkillsBaseAndVal(1f, 0.5f),
-            ["needEnergyDivide"] = new SkillsBaseAndVal(16f, Config.stepsPerEpoch),
+            ["needEnergyDivide"] = new SkillsBaseAndVal(15f, Config.stepsPerEpoch),
         };
     }
 
@@ -44,7 +44,12 @@ public class Genome
         g = refGenome.g;
         b = refGenome.b;
 
-        skills = new Dictionary<string, SkillsBaseAndVal>(refGenome.skills);
+        skills = new Dictionary<string, SkillsBaseAndVal>();
+        foreach (var entry in refGenome.skills)
+        {
+            var val = new SkillsBaseAndVal(entry.Value.First, entry.Value.Second);
+            skills.Add(entry.Key, val);
+        }
     }
 
     public float GetActualSkill(string name)
@@ -68,11 +73,15 @@ public class Genome
         //skills["foodAspect"].First = Mathf.Clamp01(skills["foodAspect"].First);
         //skills["size"].First = Mathf.Clamp(skills["size"].First, 0.5f, 3f);
         skills["memoryFactor"].First = Mathf.Clamp(skills["memoryFactor"].First, 0.05f, 1f);
+        //skills["speed"].First = Mathf.Clamp(skills["speed"].First, 0.05f, 1.7f);
+        skills["speed"].First = 1f;
 
-        float colorD = 10f / 225f;
+        float colorD = 30f / 225f;
         float colorProb = 0.6f;
         if (UnityEngine.Random.value < colorProb) r = Mathf.Clamp01(r + UnityEngine.Random.Range(-colorD, colorD));
         if (UnityEngine.Random.value < colorProb) g = Mathf.Clamp01(g + UnityEngine.Random.Range(-colorD, colorD));
         if (UnityEngine.Random.value < colorProb) b = Mathf.Clamp01(b + UnityEngine.Random.Range(-colorD, colorD));
     }
+
+    
 }

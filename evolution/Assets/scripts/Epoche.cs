@@ -10,10 +10,11 @@ public class Epoch
     public int size;
     
     public double[] rewards;
+    public double[] punishs;
     public double[][] inputs;
     public double[][] outputs;
 
-    public double gamma = 0.9;
+    public double gamma = 0.88;
 
     private int epochI = 0;
 
@@ -21,11 +22,12 @@ public class Epoch
     { 
         this.size = size;
         rewards = new double[size];
+        punishs = new double[size];
         inputs = new double[size][];
         outputs = new double[size][];
     }
 
-    public void AddEpoch(double[] input, double[] output, double reward)
+    public void AddEpoch(double[] input, double[] output, double reward, double punish)
     {
         inputs[epochI] = new double[input.Length];
         Array.Copy(input, inputs[epochI], input.Length);
@@ -34,6 +36,7 @@ public class Epoch
         Array.Copy(output, outputs[epochI], output.Length);
 
         rewards[epochI] = reward;
+        punishs[epochI] = punish;
         
         epochI++;
     }
@@ -46,6 +49,7 @@ public class Epoch
     public void Apply(ref NN nn)
     {
         UnityEngine.Debug.Log("Reward summ: " + rewards.Sum().ToString("0.0000"));
+        UnityEngine.Debug.Log("Punishment summ: " + punishs.Sum().ToString("0.0000"));
 
         epochI = 0;
 
@@ -53,15 +57,18 @@ public class Epoch
 
         double[,] explicitOuts = ToExplicitOutput(outs);
 
-        double[,] des = explicitOuts.Subtract(outs);
+        double[] discountedReward = NormGrade(rewards);
+        var rewMap = discountedReward.Outer(Accord.Math.Vector.Ones(outs.GetLength(1)));
+        
+        double[] discountedPuns = NormGrade(punishs);
+        var punMap = discountedPuns.Outer(Accord.Math.Vector.Ones(outs.GetLength(1)));
 
-        double[] discountedReward = NormRewards(rewards);
-        var rewMap = discountedReward.Outer(Accord.Math.Vector.Ones(des.GetLength(1)));
-        //des = des.Transpose().Dot(rewMatrix).Transpose();
+        double[,] dersR = explicitOuts.Subtract(outs).Multiply(rewMap);
+        double[,] dersP = explicitOuts.Multiply(-1d).Subtract(outs).Multiply(punMap);
 
-        des = des.Multiply(rewMap);
+        double[,] ders = dersR.Add(dersP);
 
-        nn.BackProp(inputs, des.ToJagged());
+        nn.BackProp(inputs, ders.ToJagged());
     }
 
     double[,] ToExplicitOutput(double[,] outputs)
@@ -72,26 +79,26 @@ public class Epoch
         return outp;
     }
 
-    double[] NormRewards(double[] rews)
+    double[] NormGrade(double[] grade)
     {
-        double[] newRews = Accord.Math.Vector.Zeros(rews.Length);
+        double[] newGrades = Accord.Math.Vector.Zeros(grade.Length);
 
         // Spreading reward for the previous actions
         double runningAdd = 0;
         for (int i = size - 1; i >= 0; i--)
         {
-            if (Math.Abs(rews[i]) >= Math.Abs(runningAdd) || ((rews[i] < 0) != (runningAdd < 0))) 
+            if (Math.Abs(grade[i]) >= Math.Abs(runningAdd) || ((grade[i] < 0) != (runningAdd < 0))) 
                 runningAdd = 0;
-            runningAdd = runningAdd * gamma + rews[i];
-            newRews[i] = runningAdd;
+            runningAdd = runningAdd * gamma + grade[i];
+            newGrades[i] = runningAdd;
         }
 
-        double mean = newRews.Mean();
-        //double dev = StandardDeviation(newRews);
+        double mean = newGrades.Mean();
+        //double dev = StandardDeviation(newGrades);
 
-        newRews = newRews.Subtract(mean);
+        newGrades = newGrades.Subtract(mean);
         
-        return newRews;
+        return newGrades;
     }
 
     double StandardDeviation(double[] a)

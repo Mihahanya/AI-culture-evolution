@@ -31,10 +31,14 @@ public class NN
 
     public NN(NN nn)
     {
-        sizes = nn.sizes;
-        layers = new Layer[nn.layers.Length];
-        Array.Copy(nn.layers, layers, nn.layers.Length);
+        sizes = new int[nn.sizes.Length];
+        Array.Copy(nn.sizes, sizes, nn.sizes.Length);
 
+        layers = new Layer[nn.layers.Length];
+        //Array.Copy(nn.layers, layers, nn.layers.Length);
+        for (int i = 0; i < layers.Length; i++)
+            layers[i] = new Layer(nn.layers[i]);
+    
         RMSpropCache = new Layer[layers.Length];
         for (int i = 1; i < sizes.Length; i++)
             RMSpropCache[i-1] = new Layer(sizes[i-1], sizes[i]);
@@ -65,8 +69,7 @@ public class NN
 
     public double[] ExplicitOutput()
     {
-        double[] outp = Vector.Copy(layers[layers.Length - 1].neurons);
-        outp = outp.Apply(x => x < 0d ? -1d : 1d);
+        double[] outp = layers[layers.Length - 1].neurons.Apply(x => x < 0d ? -1d : 1d);
 
         return outp;
     }
@@ -80,13 +83,15 @@ public class NN
         var inputsMat = Matrix.ToMatrix(inputs);
         var errorsMat = Matrix.ToMatrix(errors);
 
+        // Record whole NN neurons states for the every batch
+
         double[][,] neuronsStatesInLayers = new double[sizes.Length][,]; // sizes num x batch size x neurons in layer 
 
         for (int i = 0; i < sizes.Length; i++)
             neuronsStatesInLayers[i] = new double[batchSize, sizes[i]];
     
         neuronsStatesInLayers[0] = Matrix.Copy(inputsMat);
-
+        
         for (int i = 0; i < batchSize; i++)
         {
             _ = FeedForward(inputs[i]);
@@ -95,6 +100,8 @@ public class NN
                 neuronsStatesInLayers[j] = neuronsStatesInLayers[j].SetRow(i, layers[j - 1].neurons);
 
         }
+
+        // Calculating gradients 
 
         Layer[] gradBuff = new Layer[layers.Length];
         for (int i = 0; i < layers.Length; i++)
@@ -108,11 +115,8 @@ public class NN
 
             // Update weights
 
-            var wGradients = errorsMat.TransposeAndDot(prevNeurons).Transpose();
-            var bGradients = errorsMat.Sum(0);
-
-            gradBuff[k].weights = Matrix.Copy(wGradients);
-            gradBuff[k].biases = Vector.Copy(bGradients);
+            gradBuff[k].weights = errorsMat.TransposeAndDot(prevNeurons).Transpose();
+            gradBuff[k].biases = errorsMat.Sum(0);
 
             // Errors for the next layers
 
@@ -124,19 +128,25 @@ public class NN
             errorsMat = Matrix.ToMatrix(newErrs);
         }
 
+        // Applying gradients with RMSprop optimization
+
         for (int i = 0; i < layers.Length; i++)
         {
-            double[,] g = Matrix.Copy(gradBuff[i].weights).Divide(batchSize);
-            var gSqr = g.Apply(x => x * x);
-            RMSpropCache[i].weights = RMSpropCache[i].weights.Multiply(decayRate).Add(gSqr.Multiply(1d - decayRate));
-            var rmspropsqrt = RMSpropCache[i].weights.Apply(Math.Sqrt);
-            layers[i].weights = layers[i].weights.Add(g.Multiply(learningRate).Divide(rmspropsqrt.Add(1e-5)));
+            double[,] g = gradBuff[i].weights.Divide(batchSize);
+            double[] gB = gradBuff[i].biases.Divide(batchSize);
 
-            double[] gB = Vector.Copy(gradBuff[i].biases).Divide(batchSize);
+            double[,] gSqr = g.Apply(x => x * x);
             double[] gSqrB = gB.Apply(x => x * x);
+            
+            RMSpropCache[i].weights = RMSpropCache[i].weights.Multiply(decayRate).Add(gSqr.Multiply(1d - decayRate));
             RMSpropCache[i].biases = RMSpropCache[i].biases.Multiply(decayRate).Add(gSqrB.Multiply(1d - decayRate));
+            
+            double[,] rmspropsqrt = RMSpropCache[i].weights.Apply(Math.Sqrt);
             double[] rmspropsqrtB = RMSpropCache[i].biases.Apply(Math.Sqrt);
+            
+            layers[i].weights = layers[i].weights.Add(g.Multiply(learningRate).Divide(rmspropsqrt.Add(1e-5)));
             layers[i].biases = layers[i].biases.Add(gB.Multiply(learningRate).Divide(rmspropsqrtB.Add(1e-5)));
+
 
             //layers[i].weights = layers[i].weights.Add(gradBuff[i].weights.Multiply(learningRate));
             //layers[i].biases = layers[i].biases.Add(gradBuff[i].biases.Multiply(learningRate));

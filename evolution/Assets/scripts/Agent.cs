@@ -8,7 +8,7 @@ using System.Linq;
 public class Agent : MonoBehaviour
 {
     [NonSerialized]
-    public bool exhaustion = false;
+    public bool exhaustion = true;
     [NonSerialized]
     public bool encourage = true;
 
@@ -36,6 +36,8 @@ public class Agent : MonoBehaviour
     public double[] outputs;
     [NonSerialized]
     public float reward = 0;
+    [NonSerialized]
+    public float punishing = 0;
 
 
     void Start()
@@ -44,8 +46,6 @@ public class Agent : MonoBehaviour
 
         inputs = new double[inputCount];
         outputs = new double[outputCount];
-
-        epoch = new Epoch(Config.stepsPerEpoch);
 
         if (generation == 0) genome = new Genome(inputCount, outputCount);
 
@@ -61,6 +61,8 @@ public class Agent : MonoBehaviour
         memoryFactor = genome.GetActualSkill("memoryFactor");
         //var size = genome.GetActualSkill("size");
         //transform.localScale = Vector3.one * size;
+
+        epoch = new Epoch(Config.stepsPerEpoch);
     }
 
     void LateUpdate()
@@ -149,7 +151,8 @@ public class Agent : MonoBehaviour
         rb.velocity = RotateVector(new Vector2((float)outputs[0], (float)outputs[1]) * speed, transform.localEulerAngles.z) * fps / Config.stepsPerEpoch;
         rb.angularVelocity = (float)outputs[2] * angSpeed * fps / Config.stepsPerEpoch;
 
-        if ((float)outputs[3] > 0.5f && energy >= genome.GetActualSkill("needEnergyDivide"))
+        if (energy >= genome.GetActualSkill("needEnergyDivide"))
+        //if ((float)outputs[3] > 0.5f && energy >= genome.GetActualSkill("needEnergyDivide"))
             DivideYourself();
 
         // Movement coasts
@@ -178,24 +181,25 @@ public class Agent : MonoBehaviour
 
         if (encourage)
         {
-            var foods = GameObject.FindGameObjectsWithTag("food");
-            float minDist = 5;
-            foreach (var f in foods)
-            {
-                float d = Vector2.Distance(f.transform.position, transform.position);
-                if (d < minDist)
-                    minDist = d;
-            }
-            
-            reward += (1f / (minDist + 1) - 1f / (5 + 1)) * 0.05f;
+            //var foods = GameObject.FindGameObjectsWithTag("food");
+            //float minDist = 5;
+            //foreach (var f in foods)
+            //{
+            //    float d = Vector2.Distance(f.transform.position, transform.position);
+            //    if (d < minDist)
+            //        minDist = d;
+            //}
+            //
+            //reward += (1f / (minDist + 1) - 1f / (5 + 1)) * 0.05f;
 
             //reward += findedRays_n / eyesCount * 0.001f;
 
-            epoch.AddEpoch(inputs, outputs, reward);
+            epoch.AddEpoch(inputs, outputs, reward, punishing);
 
             if (epoch.IsDone()) epoch.Apply(ref genome.nn);
         }
         reward = 0f;
+        punishing = 0f;
     }
 
     void OnTriggerEnter2D(Collider2D col)
@@ -211,9 +215,9 @@ public class Agent : MonoBehaviour
 
     void DivideYourself()
     {
-        return;
+        //return;
 
-        reward += 7;
+        reward += 3;
 
         GameObject b = (GameObject)UnityEngine.Object.Instantiate(bacteriaPrefab);
         b.transform.position = transform.position;
@@ -224,7 +228,10 @@ public class Agent : MonoBehaviour
         agentMind.age = 0;
 
         agentMind.genome = new Genome(genome);
-        agentMind.genome.Mutate(0.5f, 0.3f, 0.2f, 0.05f);
+        if (UnityEngine.Random.value < 0.5) 
+            agentMind.genome.Mutate(0.5f, 0.2f, 0.2f, 0.05f);
+        else
+            agentMind.genome.Mutate(0.2f, 0.7f, 0.2f, 0.05f);
 
         agentMind.InitAgent();
 
@@ -238,7 +245,7 @@ public class Agent : MonoBehaviour
     {
         if (col.gameObject.tag == "wall")
         {
-            reward -= 0.5f;
+            punishing += 0.5f;
             transform.position = new Vector3(-transform.position.x, -transform.position.y, transform.position.z) + transform.position.normalized;
         }
     }

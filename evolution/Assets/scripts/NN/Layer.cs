@@ -25,8 +25,10 @@ public class Layer
 
     public Layer(Layer l) : this(l.inputSize, l.outSize)
     {
-        weights = Matrix.Copy(l.weights);
-        biases = Vector.Copy(l.biases);
+        weights = l.weights.Clone() as double[,];
+
+        biases = new double[l.biases.Length];
+        Array.Copy(l.biases, biases, l.biases.Length);
     }
 
     public void calcLayer(double[] inputs)
@@ -57,9 +59,9 @@ public class Layer
 
     public void mutateLayer(double mutationAmplitude, double probability)
     {
-        Func<double, double> fillAndInterpolate = (x) => UnityEngine.Random.value < probability ? (x * 2 - 1) * mutationAmplitude : 0;
+        Func<double, double> fillAndInterpolate = (x) => UnityEngine.Random.value < probability ? (x * 2d - 1d) * mutationAmplitude : 0d;
 
-        var weightsMask = Matrix.Random(inputSize, outSize);
+        var weightsMask = Matrix.Random(outSize, inputSize);
         weightsMask = weightsMask.Apply(fillAndInterpolate);
 
         var biasMask = Vector.Random(outSize);
@@ -68,4 +70,18 @@ public class Layer
         weights = weights.Add(weightsMask);
         biases = biases.Add(biasMask);
     }
+
+    //public void mutateLayer(float mutationAmplitude, float probability)
+    //{
+    //    for (int i = 0; i < outSize; i++)
+    //    {
+    //        if (UnityEngine.Random.value < probability)
+    //            biases[i] += UnityEngine.Random.Range(-mutationAmplitude, mutationAmplitude);
+    //        for (int j = 0; j < inputSize; j++)
+    //        {
+    //            if (UnityEngine.Random.value < probability)
+    //                weights[i, j] += UnityEngine.Random.Range(-mutationAmplitude, mutationAmplitude);
+    //        }
+    //    }
+    //}
 }
