@@ -1,16 +1,8 @@
 ﻿using Accord.Math;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Assertions.Must;
-using UnityEngine.Experimental.PlayerLoop;
-using UnityEngine.Rendering;
 using UnityEngine.UI;
-using static UnityEditor.PlayerSettings;
-using static UnityEngine.ParticleSystem;
-using static UnityEngine.UI.Image;
 
 
 public class Display : MonoBehaviour

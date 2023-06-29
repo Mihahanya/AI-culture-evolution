@@ -19,7 +19,7 @@ public class Genome
 
     public Genome(int inputSize, int outputSize)
     {
-        nn = new NN(inputSize, 10, 9, outputSize);
+        nn = new NN(inputSize, 15, 10, outputSize);
 
         r = UnityEngine.Random.Range(0f, 1f);
         g = UnityEngine.Random.Range(0f, 1f);
@@ -29,8 +29,8 @@ public class Genome
         {
             ["speed"] = new SkillsBaseAndVal(1f, 9f),
             ["angularSpeed"] = new SkillsBaseAndVal(1f, 200f),
-            //["foodAspect"] = new SkillsBaseAndVal(1f, 1f),
-            ["memoryFactor"] = new SkillsBaseAndVal(0.5f, 1f), //
+            ["foodAspect"] = new SkillsBaseAndVal(1f, 1f),
+            ["memoryFactor"] = new SkillsBaseAndVal(0.6f, 1f), //
             //["size"] = new SkillsBaseAndVal(1f, 0.5f),
             ["needEnergyDivide"] = new SkillsBaseAndVal(15f, Config.stepsPerEpoch),
         };

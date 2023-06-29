@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-
 
 public class Agent : MonoBehaviour
 {
@@ -25,7 +22,8 @@ public class Agent : MonoBehaviour
 
     private const int eyesCount = 6;
     private const int memoryNeurons = 5;
-    private const int inputCount = eyesCount + 3 + memoryNeurons + 0; // eyes by distance and colors, ~age/energy, ~energy/age 
+                                // eyes by distance and colors, memory, (~age/energy, ~energy/age) 
+    private const int inputCount = eyesCount * 4 + memoryNeurons + 2; 
     private const int outputCount = 3 + memoryNeurons + 1; // move, divide
 
     float speed, angSpeed, foodProd, memoryFactor;
@@ -74,15 +72,12 @@ public class Agent : MonoBehaviour
 
         if (exhaustion) energy -= 1f;
 
+        // Setting new inputs
 
-        var newInputs = new double[inputCount];
+        var newInputs = new double[] { };
 
+        double[] visionData = new double[eyesCount*4];
         float maxDist = 15f;
-
-        float midColR = 0f;
-        float midColG = 0f;
-        float midColB = 0f;
-        int findedRays_n = 0;
 
         for (int i = 0; i < eyesCount; i++)
         {
@@ -91,50 +86,35 @@ public class Agent : MonoBehaviour
             RaycastHit2D hit = Physics2D.Raycast(from, direction, maxDist);
             if (hit)
             {
-                newInputs[i] = 1f - hit.distance / maxDist;
+                visionData[i] = 1f - hit.distance / maxDist;
 
                 Color hitColor = hit.transform.gameObject.GetComponent<SpriteRenderer>().color;
 
-                //newInputs[i*4 + 1] = hitColor.r;
-                //newInputs[i*4 + 2] = hitColor.g;
-                //newInputs[i*4 + 3] = hitColor.b;
-
-                findedRays_n++;
-                midColR += hitColor.r;
-                midColG += hitColor.g;
-                midColB += hitColor.b;
+                visionData[i*4 + 1] = hitColor.r;
+                visionData[i*4 + 2] = hitColor.g;
+                visionData[i*4 + 3] = hitColor.b;
 
                 Debug.DrawRay(from, hit.distance * direction, hitColor);
             }
             else
             {
-                newInputs[i] = 0;
-                //newInputs[i * 4 + 1] = -1;
-                //newInputs[i * 4 + 2] = -1;
-                //newInputs[i * 4 + 3] = -1;
+                visionData[i] = 0;
+                visionData[i * 4 + 1] = -1;
+                visionData[i * 4 + 2] = -1;
+                visionData[i * 4 + 3] = -1;
             }
         }
 
-        if (findedRays_n > 0)
-        {
-            newInputs[eyesCount + 0] = midColR / findedRays_n;
-            newInputs[eyesCount + 1] = midColG / findedRays_n;
-            newInputs[eyesCount + 2] = midColB / findedRays_n;
-        }
-        else
-        {
-            newInputs[eyesCount + 0] = -1;
-            newInputs[eyesCount + 1] = -1;
-            newInputs[eyesCount + 2] = -1;
-        }
+        newInputs = newInputs.Concat(visionData).ToArray();
 
-        for (int i = 0; i < memoryNeurons; i++)
-        {
-            newInputs[eyesCount + 3 + i] = outputs[i + 4]; // because movement, rotation and division
-        }
+        // Memory
+        newInputs = newInputs.Concat(inputs.Skip(4).Take(memoryNeurons)).ToArray(); // because movement, rotation and division
 
-        //newInputs[eyesCount + 3 + memoryNeurons] = age / energy;
-        //newInputs[eyesCount + 3 + memoryNeurons + 1] = energy / age;
+        // Age data
+        newInputs = newInputs.Concat(new double[] { age / energy, energy / age }).ToArray();
+
+
+        // Updata inputs
 
         for (int i = 0; i < inputCount; i++)
         {

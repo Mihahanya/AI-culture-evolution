@@ -33,6 +33,8 @@ public class Layer
 
     public void calcLayer(double[] inputs)
     {
+        Debug.Assert(inputs.Length == inputSize);
+
         neurons = Matrix.Dot(weights, inputs);
         neurons = neurons.Add(biases);
         neurons = Matrix.Apply(neurons, Math.Tanh);

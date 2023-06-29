@@ -1,6 +1,7 @@
 ﻿using Accord.Math;
 using Accord.Statistics;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 
@@ -29,6 +30,12 @@ public class Epoch
 
     public void AddEpoch(double[] input, double[] output, double reward, double punish)
     {
+        if (epochI != 0)
+        {
+            UnityEngine.Debug.Assert(input.Length == inputs[0].Length);
+            UnityEngine.Debug.Assert(output.Length == outputs[0].Length);
+        }
+
         inputs[epochI] = new double[input.Length];
         Array.Copy(input, inputs[epochI], input.Length);
         

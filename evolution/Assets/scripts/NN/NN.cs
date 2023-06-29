@@ -47,6 +47,8 @@ public class NN
 
     public double[] FeedForward(double[] inputs)
     {
+        Debug.Assert(inputs.Length == sizes[0]);
+
         layers[0].calcLayer(inputs);
 
         for (int i = 1; i < layers.Length; i++)
@@ -77,6 +79,7 @@ public class NN
     public void BackProp(double[][] inputs, double[][] errors)
     {
         Debug.Assert(inputs.Length == errors.Length);
+        Debug.Assert(inputs[0].Length == sizes[0]);
 
         var batchSize = inputs.Length;
 
@@ -90,7 +93,7 @@ public class NN
         for (int i = 0; i < sizes.Length; i++)
             neuronsStatesInLayers[i] = new double[batchSize, sizes[i]];
     
-        neuronsStatesInLayers[0] = Matrix.Copy(inputsMat);
+        neuronsStatesInLayers[0] = inputsMat.Clone() as double[,];
         
         for (int i = 0; i < batchSize; i++)
         {
@@ -120,12 +123,15 @@ public class NN
 
             // Errors for the next layers
 
-            var newErrs = new double[batchSize][];
+            if (k != 0)
+            {
+                var newErrs = new double[batchSize][];
 
-            for (int i = 0; i < batchSize; i++)
-                newErrs[i] = Matrix.Dot(l.weights.Transpose(), errors[i]);
-            
-            errorsMat = Matrix.ToMatrix(newErrs);
+                for (int i = 0; i < batchSize; i++)
+                    newErrs[i] = Matrix.Dot(l.weights.Transpose(), errorsMat.GetRow(i));
+
+                errorsMat = Matrix.ToMatrix(newErrs);
+            }
         }
 
         // Applying gradients with RMSprop optimization
@@ -134,7 +140,7 @@ public class NN
         {
             double[,] g = gradBuff[i].weights.Divide(batchSize);
             double[] gB = gradBuff[i].biases.Divide(batchSize);
-
+            
             double[,] gSqr = g.Apply(x => x * x);
             double[] gSqrB = gB.Apply(x => x * x);
             
@@ -146,8 +152,7 @@ public class NN
             
             layers[i].weights = layers[i].weights.Add(g.Multiply(learningRate).Divide(rmspropsqrt.Add(1e-5)));
             layers[i].biases = layers[i].biases.Add(gB.Multiply(learningRate).Divide(rmspropsqrtB.Add(1e-5)));
-
-
+            
             //layers[i].weights = layers[i].weights.Add(gradBuff[i].weights.Multiply(learningRate));
             //layers[i].biases = layers[i].biases.Add(gradBuff[i].biases.Multiply(learningRate));
         }
