@@ -27,7 +27,7 @@ public class Display : MonoBehaviour
 
     Vector2 visualizationSizes;
 
-    float timer = 0.1f;
+    float timer = 10;
     public int bacteriaCount = 0;
     public int deathCount = 0;
     public int bornCount = 0;
@@ -56,8 +56,9 @@ public class Display : MonoBehaviour
         var bacterias = GameObject.FindGameObjectsWithTag("bacteria");
         bacteriaCount = bacterias.Length;
         
-        timer -= Time.deltaTime;
-        if (timer < 0)
+        //timer -= Time.deltaTime;
+        timer--;
+        if (timer <= 0)
         {
             float midAge = 0, midGeneration = 0;
 
@@ -82,7 +83,7 @@ public class Display : MonoBehaviour
             bornCount = 0;
             deathCount = 0;
 
-            timer = 2f;
+            timer = Config.stepsPerEpoch;
         }
 
     }

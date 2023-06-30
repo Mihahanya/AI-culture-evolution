@@ -27,8 +27,8 @@ public class Genome
 
         skills = new Dictionary<string, SkillsBaseAndVal>()
         {
-            ["speed"] = new SkillsBaseAndVal(1f, 9f),
-            ["angularSpeed"] = new SkillsBaseAndVal(1f, 200f),
+            ["speed"] = new SkillsBaseAndVal(1f, 0.7f),
+            ["angularSpeed"] = new SkillsBaseAndVal(1f, 10f),
             ["foodAspect"] = new SkillsBaseAndVal(1f, 1f),
             ["memoryFactor"] = new SkillsBaseAndVal(0.6f, 1f), //
             //["size"] = new SkillsBaseAndVal(1f, 0.5f),

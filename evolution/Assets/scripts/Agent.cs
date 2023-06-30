@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using System.Linq;
+using Accord;
 
 public class Agent : MonoBehaviour
 {
@@ -13,7 +14,7 @@ public class Agent : MonoBehaviour
     Rigidbody2D rb;
 
     [NonSerialized]
-    public float energy = 300;
+    public float energy = 140;
     public float age = 0;
     public int generation = 0;
 
@@ -21,22 +22,24 @@ public class Agent : MonoBehaviour
     public Epoch epoch;
 
     private const int eyesCount = 6;
-    private const int memoryNeurons = 5;
+    private const int memoryNeuronsN = 5;
                                 // eyes by distance and colors, memory, (~age/energy, ~energy/age) 
-    private const int inputCount = eyesCount * 4 + memoryNeurons + 2; 
-    private const int outputCount = 3 + memoryNeurons + 1; // move, divide
+    private const int inputCount = eyesCount * 4 + memoryNeuronsN + 2; 
+    private const int outputCount = 3 + memoryNeuronsN + 1; // move, divide
 
-    float speed, angSpeed, foodProd, memoryFactor;
+    float speed, angSpeed, foodProd, memoryFactor, needEnergyToDivide;
+    float speedK, angSpeedK;
 
     [NonSerialized]
     public double[] inputs;
     [NonSerialized]
     public double[] outputs;
     [NonSerialized]
+    public double[] memoryNeuronsState;
+    [NonSerialized]
     public float reward = 0;
     [NonSerialized]
     public float punishing = 0;
-
 
     void Start()
     {
@@ -44,6 +47,7 @@ public class Agent : MonoBehaviour
 
         inputs = new double[inputCount];
         outputs = new double[outputCount];
+        memoryNeuronsState = new double[memoryNeuronsN];
 
         if (generation == 0) genome = new Genome(inputCount, outputCount);
 
@@ -57,8 +61,12 @@ public class Agent : MonoBehaviour
         speed = genome.GetActualSkill("speed");
         angSpeed = genome.GetActualSkill("angularSpeed");
         memoryFactor = genome.GetActualSkill("memoryFactor");
+        needEnergyToDivide = genome.GetActualSkill("needEnergyDivide");
         //var size = genome.GetActualSkill("size");
         //transform.localScale = Vector3.one * size;
+
+        speedK = genome.skills["speed"].First;
+        angSpeedK = genome.skills["angularSpeed"].First;
 
         epoch = new Epoch(Config.stepsPerEpoch);
     }
@@ -76,12 +84,18 @@ public class Agent : MonoBehaviour
 
         var newInputs = new double[] { };
 
+        // Age adn hunger data
+        newInputs = newInputs.Concat(new double[] { age / energy, energy / age }).ToArray();
+
+        // Memory
+        newInputs = newInputs.Concat(memoryNeuronsState).ToArray();
+
         double[] visionData = new double[eyesCount*4];
         float maxDist = 15f;
 
         for (int i = 0; i < eyesCount; i++)
         {
-            Vector2 direction = RotateVector(transform.up, i * 360f / eyesCount);
+            Vector2 direction = transform.up.xy().RotateVector(i * 360f / eyesCount);
             Vector2 from = new Vector2(transform.position.x, transform.position.y) + direction * 2f * transform.localScale.x;
             RaycastHit2D hit = Physics2D.Raycast(from, direction, maxDist);
             if (hit)
@@ -107,32 +121,36 @@ public class Agent : MonoBehaviour
 
         newInputs = newInputs.Concat(visionData).ToArray();
 
-        // Memory
-        newInputs = newInputs.Concat(inputs.Skip(4).Take(memoryNeurons)).ToArray(); // because movement, rotation and division
+        Debug.Assert(newInputs.Length == inputCount);
 
-        // Age data
-        newInputs = newInputs.Concat(new double[] { age / energy, energy / age }).ToArray();
-
-
-        // Updata inputs
+        // Update inputs
 
         for (int i = 0; i < inputCount; i++)
         {
             inputs[i] = inputs[i] * (1 - memoryFactor) + newInputs[i] * memoryFactor;
         }
 
+        // Decode outputs
+
         outputs = genome.nn.FeedForward(inputs);
 
+        Vector2 movOut = new Vector2((float)outputs[0], (float)outputs[1]).normalized;
+        float rotOut = (float)outputs[2];
+        bool isDivideOut = outputs[3] > 0.5;
+        memoryNeuronsState = outputs.Skip(4).Take(memoryNeuronsN).ToArray();
+
         // Physical result
-        
+
         float fps = Config.fps;
         if (Config.fps > 1f / Time.deltaTime) fps = 1f / Time.deltaTime;
 
-        rb.velocity = RotateVector(new Vector2((float)outputs[0], (float)outputs[1]) * speed, transform.localEulerAngles.z) * fps / Config.stepsPerEpoch;
-        rb.angularVelocity = (float)outputs[2] * angSpeed * fps / Config.stepsPerEpoch;
-
-        if (energy >= genome.GetActualSkill("needEnergyDivide"))
-        //if ((float)outputs[3] > 0.5f && energy >= genome.GetActualSkill("needEnergyDivide"))
+        rb.MovePosition(transform.position.xy() + 
+                        (transform.up.xy() * movOut.y + transform.right.xy() * movOut.x) * speed);
+        
+        rb.MoveRotation(rb.rotation + rotOut * angSpeed);
+        
+        if (energy >= needEnergyToDivide)
+        //if (isDivideOut && energy >= needEnergyToDivide)
             DivideYourself();
 
         // Movement coasts
@@ -140,11 +158,11 @@ public class Agent : MonoBehaviour
         if (exhaustion)
         {
             var consumption = 0f;
-            consumption += new Vector2((float)outputs[0], (float)outputs[1]).magnitude * Mathf.Abs(genome.skills["speed"].First);
-            consumption += Mathf.Abs((float)outputs[2]) * Mathf.Abs(genome.skills["angularSpeed"].First);
+            consumption += movOut.magnitude * Mathf.Abs(speedK);
+            consumption += rotOut * Mathf.Abs(angSpeedK);
         
             //consumption *= Mathf.Pow(genome.skills["size"].First, 2f) * 0.35f;
-            consumption *= 0.2f;
+            consumption *= 0.3f;
 
             energy -= consumption;
         }
@@ -230,12 +248,4 @@ public class Agent : MonoBehaviour
         }
     }
 
-
-    public Vector2 RotateVector(Vector2 v, float angle)
-    {
-        float radian = angle * Mathf.Deg2Rad;
-        float _x = v.x * Mathf.Cos(radian) - v.y * Mathf.Sin(radian);
-        float _y = v.x * Mathf.Sin(radian) + v.y * Mathf.Cos(radian);
-        return new Vector2(_x, _y);
-    }
 }
