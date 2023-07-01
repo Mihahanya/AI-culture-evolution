@@ -1,10 +1,12 @@
 ﻿using Accord.Math;
 using Accord.Statistics;
+using Accord.Statistics.Kernels;
 using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-
+using System.Resources;
+using System.Runtime.InteropServices.ComTypes;
 
 public class Epoch
 {
@@ -12,8 +14,8 @@ public class Epoch
     
     public double[] rewards;
     public double[] punishs;
-    public double[][] inputs;
-    public double[][] outputs;
+    public double[,][] states; // batch x layer x val
+    public double[][] outputs; 
 
     public double gamma = 0.88;
 
@@ -24,23 +26,34 @@ public class Epoch
         this.size = size;
         rewards = new double[size];
         punishs = new double[size];
-        inputs = new double[size][];
         outputs = new double[size][];
+        //states = new double[size][][];
     }
 
-    public void AddEpoch(double[] input, double[] output, double reward, double punish)
+    public void AddEpoch(double[] input, double[][] state, double reward, double punish)
     {
         if (epochI != 0)
         {
-            UnityEngine.Debug.Assert(input.Length == inputs[0].Length);
-            UnityEngine.Debug.Assert(output.Length == outputs[0].Length);
+            UnityEngine.Debug.Assert(state.Length+1 == states.GetLength(1));
+            UnityEngine.Debug.Assert(input.Length == states[0, 0].Length);
+            for (int i = 0; i < state.Length; i++) 
+                UnityEngine.Debug.Assert(state[i].Length == states[0, i + 1].Length);
+        }
+        else
+        {
+            states = new double[size, state.Length + 1][];
         }
 
-        inputs[epochI] = new double[input.Length];
-        Array.Copy(input, inputs[epochI], input.Length);
-        
-        outputs[epochI] = new double[output.Length];
-        Array.Copy(output, outputs[epochI], output.Length);
+        states[epochI, 0] = new double[input.Length];
+        Array.Copy(input, states[epochI, 0], input.Length);
+
+        for (int i = 0; i < state.Length; i++)
+        {
+            states[epochI, i+1] = new double[state[i].Length];
+            Array.Copy(state[i], states[epochI, i + 1], state[i].Length);
+        }
+
+        outputs[epochI] = state[state.Length-1];
 
         rewards[epochI] = reward;
         punishs[epochI] = punish;
@@ -60,7 +73,17 @@ public class Epoch
 
         epochI = 0;
 
-        var outs = Matrix.ToMatrix(outputs);
+        //var outs = states.GetColumn(states.GetLength(1)-1).ToMatrix();
+        //int outSize = states[0, states.GetLength(1) - 1].Length;
+        //var outs = new double[size, outSize];
+        //for (int i = 0; i < size; i++)
+        //{
+        //    for (int j = 0; j < outSize; j++)
+        //        outs[i, j] = states[i, states.GetLength(1)-1][j];
+        //
+        //}
+
+        var outs = outputs.ToMatrix();
 
         double[,] explicitOuts = ToExplicitOutput(outs);
 
@@ -75,7 +98,8 @@ public class Epoch
 
         double[,] ders = dersR.Add(dersP);
 
-        nn.BackProp(inputs, ders.ToJagged());
+        nn.BackProp(states.Transpose().ToJagged(), ders.ToJagged());
+        //nn.BackProp(states.GetColumn(0), ders.ToJagged());
     }
 
     double[,] ToExplicitOutput(double[,] outputs)
@@ -118,5 +142,22 @@ public class Epoch
             res += (double)Math.Pow(a[i] - mean, 2f) / a.Length;
 
         return (double)Math.Sqrt(res);
+    }
+
+    static int[][] CopyArray(int[][] source)
+    {
+        var len = source.Length;
+        var dest = new int[len][];
+
+        for (var x = 0; x < len; x++)
+        {
+            var inner = source[x];
+            var ilen = inner.Length;
+            var newer = new int[ilen];
+            Array.Copy(inner, newer, ilen);
+            dest[x] = newer;
+        }
+
+        return dest;
     }
 }

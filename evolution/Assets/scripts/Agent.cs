@@ -6,12 +6,14 @@ using Accord;
 public class Agent : MonoBehaviour
 {
     [NonSerialized]
-    public bool exhaustion = true;
+    public bool exhaustion = false;
     [NonSerialized]
     public bool encourage = true;
 
     public GameObject bacteriaPrefab;
     Rigidbody2D rb;
+
+    public bool watchingByCamera = false;
 
     [NonSerialized]
     public float energy = 140;
@@ -192,9 +194,14 @@ public class Agent : MonoBehaviour
 
             //reward += findedRays_n / eyesCount * 0.001f;
 
-            epoch.AddEpoch(inputs, outputs, reward, punishing);
+            epoch.AddEpoch(inputs, genome.nn.GetState(), reward, punishing);
 
-            if (epoch.IsDone()) epoch.Apply(ref genome.nn);
+            if (epoch.IsDone())
+            {
+                epoch.Apply(ref genome.nn);
+                
+                if (watchingByCamera) Camera.main.GetComponent<Display>().UpdateWeights(genome.nn);
+            }
         }
         reward = 0f;
         punishing = 0f;
@@ -213,7 +220,7 @@ public class Agent : MonoBehaviour
 
     void DivideYourself()
     {
-        //return;
+        return;
 
         reward += 3;
 

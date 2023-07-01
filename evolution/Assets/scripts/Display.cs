@@ -110,6 +110,8 @@ public class Display : MonoBehaviour
 
                     var objData = followingObject.GetComponent<Agent>();
 
+                    objData.watchingByCamera = true;
+
                     foreach (var skill in objData.genome.skills)
                         skillsTextData += skill.Key + ": " + (skill.Value.First * skill.Value.Second) + "\n";
 
@@ -154,8 +156,6 @@ public class Display : MonoBehaviour
                     t++;
                 }
             }
-
-            if (objData.epoch.IsDone()) UpdateWeights(objData.genome.nn);
 
             dataOut.text = "";
             dataOut.text += "Energy: " + objData.energy + "\n";
@@ -224,7 +224,7 @@ public class Display : MonoBehaviour
         return neuronsViss;
     }
 
-    void UpdateWeights(NN nn)
+    public void UpdateWeights(NN nn) // Uses inside following Agent
     {
         foreach (Transform w in weightsOrient.transform)
             Destroy(w.gameObject);
@@ -291,13 +291,17 @@ public class Display : MonoBehaviour
         lr.SetColors(color, color);
         lr.SetWidth(width, width);
 
-        lr.SetPosition(0, (start - visualizationSizes / 2f) * new Vector2(1f, -1f));
-        lr.SetPosition(1, (end - visualizationSizes / 2f) * new Vector2(1f, -1f));
+        var zIndexing = new UnityEngine.Vector3(0f, 0f, -width / 100f);
+
+        lr.SetPosition(0, ((start - visualizationSizes / 2f) * new Vector2(1f, -1f)).xyz() + zIndexing);
+        lr.SetPosition(1, ((end - visualizationSizes / 2f) * new Vector2(1f, -1f)).xyz() + zIndexing);
     }
 
 
     void Close()
     {
+        if (followingObject != null) followingObject.GetComponent<Agent>().watchingByCamera = false;
+
         foreach (Transform neur in neuronOrient.transform)
             Destroy(neur.gameObject);
     

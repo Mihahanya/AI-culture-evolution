@@ -9,9 +9,9 @@ using UnityEngine;
 public class NN
 {
     public Layer[] layers;
-    private Layer[] RMSpropCache;
+    private LayerData[] RMSpropCache;
     public int[] sizes;
-    public double learningRate = 0.005f;
+    public double learningRate = 0.001f;
     public double decayRate = 0.99;
 
     public NN(params int[] sizes)
@@ -19,13 +19,13 @@ public class NN
         this.sizes = sizes;
 
         layers = new Layer[sizes.Length-1];
-        RMSpropCache = new Layer[layers.Length];
+        RMSpropCache = new LayerData[layers.Length];
         for (int i = 1; i < sizes.Length; i++)
         {
             layers[i-1] = new Layer(sizes[i-1], sizes[i]);
             layers[i-1].initRandom(-1f, 1f);
             
-            RMSpropCache[i-1] = new Layer(sizes[i-1], sizes[i]);
+            RMSpropCache[i-1] = new LayerData(sizes[i-1], sizes[i]);
         }
     }
 
@@ -39,9 +39,9 @@ public class NN
         for (int i = 0; i < layers.Length; i++)
             layers[i] = new Layer(nn.layers[i]);
     
-        RMSpropCache = new Layer[layers.Length];
+        RMSpropCache = new LayerData[layers.Length];
         for (int i = 1; i < sizes.Length; i++)
-            RMSpropCache[i-1] = new Layer(sizes[i-1], sizes[i]);
+            RMSpropCache[i-1] = new LayerData(sizes[i-1], sizes[i]);
         
     }
 
@@ -76,50 +76,37 @@ public class NN
         return outp;
     }
 
-    public void BackProp(double[][] inputs, double[][] errors)
+    public double[][] GetState() // without inputs
     {
-        Debug.Assert(inputs.Length == errors.Length);
-        Debug.Assert(inputs[0].Length == sizes[0]);
+        double[][] state = new double[layers.Length][];
 
-        var batchSize = inputs.Length;
-
-        var inputsMat = Matrix.ToMatrix(inputs);
-        var errorsMat = Matrix.ToMatrix(errors);
-
-        // Record whole NN neurons states for the every batch
-
-        double[][,] neuronsStatesInLayers = new double[sizes.Length][,]; // sizes num x batch size x neurons in layer 
-
-        for (int i = 0; i < sizes.Length; i++)
-            neuronsStatesInLayers[i] = new double[batchSize, sizes[i]];
-    
-        neuronsStatesInLayers[0] = inputsMat.Clone() as double[,];
-        
-        for (int i = 0; i < batchSize; i++)
+        for (int i = 0; i < layers.Length; i++)
         {
-            _ = FeedForward(inputs[i]);
-
-            for (int j = 1; j < sizes.Length; j++)
-                neuronsStatesInLayers[j] = neuronsStatesInLayers[j].SetRow(i, layers[j - 1].neurons);
-
+            state[i] = new double[layers[i].neurons.Length];
+            Array.Copy(layers[i].neurons, state[i], layers[i].neurons.Length);
         }
 
-        // Calculating gradients 
+        return state;
+    }
 
-        Layer[] gradBuff = new Layer[layers.Length];
+    private LayerData[] CalculateGradients(double[][,] nnStates, double[,] errors, int batchSize)
+    {
+        var errorsMat = errors.Clone() as double[,];
+
+        LayerData[] grads = new LayerData[layers.Length];
         for (int i = 0; i < layers.Length; i++)
-            gradBuff[i] = new Layer(layers[i].inputSize, layers[i].outSize);
+            grads[i] = new LayerData(layers[i].inputSize, layers[i].outSize);
 
         for (int k = layers.Length - 1; k >= 0; k--) // through layers
         {
             Layer l = layers[k];
 
-            double[,] prevNeurons = neuronsStatesInLayers[k - 1 + 1];
+            double[,] prevNeurons = nnStates[k - 1 + 1];
 
             // Update weights
 
-            gradBuff[k].weights = errorsMat.TransposeAndDot(prevNeurons).Transpose();
-            gradBuff[k].biases = errorsMat.Sum(0);
+            grads[k].weights = errorsMat.TransposeAndDot(prevNeurons).Transpose();
+            grads[k].biases = errorsMat.Sum(0);
 
             // Errors for the next layers
 
@@ -134,29 +121,84 @@ public class NN
             }
         }
 
-        // Applying gradients with RMSprop optimization
+        return grads;
+    }
 
-        for (int i = 0; i < layers.Length; i++)
+    public void BackProp(double[][,] states, double[][] errors) // sizes num x batch size x neurons in layer
+    {
+        var batchSize = errors.Length;
+
+        LayerData[] grads = CalculateGradients(states, errors.ToMatrix(), batchSize);
+
+        ApplyGradientsRMSprop(grads, batchSize);
+    }
+    
+    public void BackProp(double[][][] states, double[][] errors) // sizes num x batch size x neurons in layer
+    {
+        double[][,] formStates = new double[states.Length][,];
+        for (int i = 0; i < states.Length; i++)
         {
-            double[,] g = gradBuff[i].weights.Divide(batchSize);
-            double[] gB = gradBuff[i].biases.Divide(batchSize);
-            
-            double[,] gSqr = g.Apply(x => x * x);
-            double[] gSqrB = gB.Apply(x => x * x);
-            
-            RMSpropCache[i].weights = RMSpropCache[i].weights.Multiply(decayRate).Add(gSqr.Multiply(1d - decayRate));
-            RMSpropCache[i].biases = RMSpropCache[i].biases.Multiply(decayRate).Add(gSqrB.Multiply(1d - decayRate));
-            
-            double[,] rmspropsqrt = RMSpropCache[i].weights.Apply(Math.Sqrt);
-            double[] rmspropsqrtB = RMSpropCache[i].biases.Apply(Math.Sqrt);
-            
-            layers[i].weights = layers[i].weights.Add(g.Multiply(learningRate).Divide(rmspropsqrt.Add(1e-5)));
-            layers[i].biases = layers[i].biases.Add(gB.Multiply(learningRate).Divide(rmspropsqrtB.Add(1e-5)));
-            
-            //layers[i].weights = layers[i].weights.Add(gradBuff[i].weights.Multiply(learningRate));
-            //layers[i].biases = layers[i].biases.Add(gradBuff[i].biases.Multiply(learningRate));
+            formStates[i] = states[i].ToMatrix().Clone() as double[,];
         }
 
+        BackProp(formStates, errors);
+    }
+
+    public void BackProp(double[][] inputs, double[][] errors)
+    {
+        Debug.Assert(inputs.Length == errors.Length);
+        Debug.Assert(inputs[0].Length == sizes[0]);
+
+        var batchSize = inputs.Length;
+
+        // Record whole NN neurons states for the every batch
+
+        double[][,] neuronsStatesInLayers = new double[sizes.Length][,]; // sizes num x batch size x neurons in layer 
+
+        for (int i = 0; i < sizes.Length; i++)
+            neuronsStatesInLayers[i] = new double[batchSize, sizes[i]];
+
+        for (int i = 0; i < batchSize; i++)
+        {
+            _ = FeedForward(inputs[i]);
+
+            for (int j = 1; j < sizes.Length; j++)
+                neuronsStatesInLayers[j] = neuronsStatesInLayers[j].SetRow(i, layers[j - 1].neurons);
+        }
+    
+        neuronsStatesInLayers[0] = Matrix.ToMatrix(inputs).Clone() as double[,];
+
+        BackProp(neuronsStatesInLayers, errors);
+    }
+
+    private void ApplyGradientsRMSprop(LayerData[] grads, int batchSize=1)
+    {
+        for (int i = 0; i < layers.Length; i++)
+        {
+            double[,] g = grads[i].weights;
+            double[] gB = grads[i].biases;
+
+            double[,] gSqr = g.Apply(x => x * x);
+            double[] gSqrB = gB.Apply(x => x * x);
+
+            RMSpropCache[i].weights = RMSpropCache[i].weights.Multiply(decayRate).Add(gSqr.Multiply(1d - decayRate));
+            RMSpropCache[i].biases = RMSpropCache[i].biases.Multiply(decayRate).Add(gSqrB.Multiply(1d - decayRate));
+
+            double[,] rmspropsqrt = RMSpropCache[i].weights.Apply(Math.Sqrt);
+            double[] rmspropsqrtB = RMSpropCache[i].biases.Apply(Math.Sqrt);
+
+            layers[i].weights = layers[i].weights.Add(g.Multiply(learningRate / batchSize).Divide(rmspropsqrt.Add(1e-5)));
+            layers[i].biases = layers[i].biases.Add(gB.Multiply(learningRate / batchSize).Divide(rmspropsqrtB.Add(1e-5)));
+        }
+    }
+
+    private void ApplyGradientsSGD(LayerData[] grads, int batchSize=1)
+    {
+        for (int i = 0; i < layers.Length; i++)
+        {
+            layers[i].weights = layers[i].weights.Add(grads[i].weights.Multiply(learningRate / batchSize));
+            layers[i].biases = layers[i].biases.Add(grads[i].biases.Multiply(learningRate / batchSize));
+        }
     }
 
     double arctanh(double x)

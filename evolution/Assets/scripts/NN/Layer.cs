@@ -5,31 +5,44 @@ using UnityEngine;
 using Accord.Math;
 using Accord.Math.Random;
 
-
-public class Layer
+public class LayerData
 {
     public int inputSize { get; }
     public int outSize { get; }
     public double[,] weights;
     public double[] biases;
-    public double[] neurons;
 
-    public Layer(int inputSize, int outSize)
+    public LayerData(int inputSize, int outSize)
     {
         this.outSize = outSize;
         this.inputSize = inputSize;
-        neurons = Vector.Zeros(outSize);
         weights = Matrix.Zeros(outSize, inputSize);
         biases = Vector.Zeros(outSize);
     }
 
-    public Layer(Layer l) : this(l.inputSize, l.outSize)
+    public LayerData(LayerData l)
     {
+        inputSize = l.inputSize;
+        outSize = l.outSize;
+
         weights = l.weights.Clone() as double[,];
 
         biases = new double[l.biases.Length];
         Array.Copy(l.biases, biases, l.biases.Length);
     }
+}
+
+public class Layer : LayerData
+{
+    
+    public double[] neurons;
+
+    public Layer(int inputSize, int outSize) : base(inputSize, outSize)
+    {
+        neurons = Vector.Zeros(outSize);
+    }
+
+    public Layer(Layer l) : base(l) { }
 
     public void calcLayer(double[] inputs)
     {
