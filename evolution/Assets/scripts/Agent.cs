@@ -6,7 +6,7 @@ using Accord;
 public class Agent : MonoBehaviour
 {
     [NonSerialized]
-    public bool exhaustion = false;
+    public bool exhaustion = true;
     [NonSerialized]
     public bool encourage = true;
 
@@ -16,7 +16,7 @@ public class Agent : MonoBehaviour
     public bool watchingByCamera = false;
 
     [NonSerialized]
-    public float energy = 140;
+    public float energy = 14 * Config.stepsPerEpoch;
     public float age = 0;
     public int generation = 0;
 
@@ -25,23 +25,29 @@ public class Agent : MonoBehaviour
 
     private const int eyesCount = 6;
     private const int memoryNeuronsN = 5;
-                                // eyes by distance and colors, memory, (~age/energy, ~energy/age) 
-    private const int inputCount = eyesCount * 4 + memoryNeuronsN + 2; 
-    private const int outputCount = 3 + memoryNeuronsN + 1; // move, divide
+    
+    // move, memory, is divide, is eat, is attack
+    private const int outputCount = 3 + memoryNeuronsN + 1 + 1 + 1; 
 
-    float speed, angSpeed, foodProd, memoryFactor, needEnergyToDivide;
+    // eyes by distance and colors, (age/energy, energy/age), pain, body sensation
+    private const int inputCount = eyesCount * 4 + 2 + 1 + outputCount;
+    
+    float speed, angSpeed, memoryFactor, needEnergyToDivide;
     float speedK, angSpeedK;
+    float nonLiveFoodAssimil, liveFoodAssimil;
+    
+    public double[] memoryNeuronsState;
+    bool isDivideOut, isEatOut, isAttackOut;
+    float eatOut, attackOut;
 
     [NonSerialized]
     public double[] inputs;
     [NonSerialized]
     public double[] outputs;
-    [NonSerialized]
-    public double[] memoryNeuronsState;
-    [NonSerialized]
+
     public float reward = 0;
-    [NonSerialized]
     public float punishing = 0;
+    public float pain;
 
     void Start()
     {
@@ -67,6 +73,9 @@ public class Agent : MonoBehaviour
         //var size = genome.GetActualSkill("size");
         //transform.localScale = Vector3.one * size;
 
+        nonLiveFoodAssimil = genome.GetActualSkill("foodAspect");
+        liveFoodAssimil = 1f - nonLiveFoodAssimil; // how predatory is bacteria
+
         speedK = genome.skills["speed"].First;
         angSpeedK = genome.skills["angularSpeed"].First;
 
@@ -81,17 +90,14 @@ public class Agent : MonoBehaviour
         age++;
 
         if (exhaustion) energy -= 1f;
+        punishing += pain*2f;
 
         // Setting new inputs
 
-        var newInputs = new double[] { };
+        // Pain, age adn hunger data
+        var newInputs = new double[] { pain, age / energy, energy / age };
 
-        // Age adn hunger data
-        newInputs = newInputs.Concat(new double[] { age / energy, energy / age }).ToArray();
-
-        // Memory
-        newInputs = newInputs.Concat(memoryNeuronsState).ToArray();
-
+        // World vision
         double[] visionData = new double[eyesCount*4];
         float maxDist = 15f;
 
@@ -123,6 +129,9 @@ public class Agent : MonoBehaviour
 
         newInputs = newInputs.Concat(visionData).ToArray();
 
+        // Body sensation and memory
+        newInputs = newInputs.Concat(outputs).ToArray();
+
         Debug.Assert(newInputs.Length == inputCount);
 
         // Update inputs
@@ -138,8 +147,14 @@ public class Agent : MonoBehaviour
 
         Vector2 movOut = new Vector2((float)outputs[0], (float)outputs[1]).normalized;
         float rotOut = (float)outputs[2];
-        bool isDivideOut = outputs[3] > 0.5;
-        memoryNeuronsState = outputs.Skip(4).Take(memoryNeuronsN).ToArray();
+        isDivideOut = outputs[3] > 0d;
+
+        eatOut = (float)outputs[4];
+        attackOut = (float)outputs[5];
+        isEatOut = eatOut > 0f;
+        isAttackOut = attackOut > 0f;
+        
+        memoryNeuronsState = outputs.Skip(6).Take(memoryNeuronsN).ToArray();
 
         // Physical result
 
@@ -151,8 +166,8 @@ public class Agent : MonoBehaviour
         
         rb.MoveRotation(rb.rotation + rotOut * angSpeed);
         
-        if (energy >= needEnergyToDivide)
-        //if (isDivideOut && energy >= needEnergyToDivide)
+        //if (energy >= needEnergyToDivide)
+        if (isDivideOut && energy >= needEnergyToDivide)
             DivideYourself();
 
         // Movement coasts
@@ -161,12 +176,15 @@ public class Agent : MonoBehaviour
         {
             var consumption = 0f;
             consumption += movOut.magnitude * Mathf.Abs(speedK);
-            consumption += rotOut * Mathf.Abs(angSpeedK);
+            consumption += Mathf.Abs(rotOut) * Mathf.Abs(angSpeedK);
+            if (isEatOut) consumption += eatOut * nonLiveFoodAssimil * 0.1f;
+            if (isAttackOut) consumption += attackOut * liveFoodAssimil * 0.7f;
         
             //consumption *= Mathf.Pow(genome.skills["size"].First, 2f) * 0.35f;
-            consumption *= 0.3f;
+            consumption *= 0.4f;
 
             energy -= consumption;
+            punishing += consumption * 0.05f;
         }
 
         // Death
@@ -205,24 +223,37 @@ public class Agent : MonoBehaviour
         }
         reward = 0f;
         punishing = 0f;
+        pain = 0f;
     }
 
     void OnTriggerEnter2D(Collider2D col)
     {
-        if (col.gameObject.tag == "food")
+        if (col.gameObject.tag == "food" && isEatOut)
         {
-            //var fd = genome.GetActualSkill("foodAspect");
-            reward += 1f;
-            energy += 2.5f*Config.stepsPerEpoch;
+            float k = nonLiveFoodAssimil * eatOut;
+            reward += 1f * k;
+            energy += 2.5f * Config.stepsPerEpoch * k;
             Destroy(col.gameObject);
+        }
+        
+        if (col.gameObject.tag == "bacteria" && isAttackOut)
+        {
+            reward += 1f * liveFoodAssimil * attackOut;
+
+            var pray = col.gameObject.GetComponent<Agent>();
+            //float getting = 2.5f * Config.stepsPerEpoch * k;
+            float injury = pray.energy / 2f * attackOut;
+            energy += injury * liveFoodAssimil;
+            pray.energy -= injury;
+            pray.pain += attackOut;
         }
     }
 
     void DivideYourself()
     {
-        return;
+        //return;
 
-        reward += 3;
+        reward += 7;
 
         GameObject b = (GameObject)UnityEngine.Object.Instantiate(bacteriaPrefab);
         b.transform.position = transform.position;
@@ -234,9 +265,9 @@ public class Agent : MonoBehaviour
 
         agentMind.genome = new Genome(genome);
         if (UnityEngine.Random.value < 0.5) 
-            agentMind.genome.Mutate(0.5f, 0.2f, 0.2f, 0.05f);
+            agentMind.genome.Mutate(0.5f, 0.2f, 0.2f, 0.1f);
         else
-            agentMind.genome.Mutate(0.2f, 0.7f, 0.2f, 0.05f);
+            agentMind.genome.Mutate(0.2f, 0.7f, 0.2f, 0.1f);
 
         agentMind.InitAgent();
 

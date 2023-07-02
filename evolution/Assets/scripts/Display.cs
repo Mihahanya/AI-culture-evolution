@@ -161,6 +161,10 @@ public class Display : MonoBehaviour
             dataOut.text += "Energy: " + objData.energy + "\n";
             dataOut.text += "Age: " + objData.age + "\n";
             dataOut.text += "Generation: " + objData.generation + "\n";
+
+            dataOut.text += "Shape: ";
+            foreach (var s in objData.genome.nn.sizes) dataOut.text += s.ToString() + " ";
+            dataOut.text += "\n";
         }
 
 

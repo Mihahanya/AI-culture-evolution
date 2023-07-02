@@ -57,9 +57,6 @@ public class Epoch
 
     public void Apply(ref NN nn)
     {
-        UnityEngine.Debug.Log("Reward summ: " + rewards.Sum().ToString("0.0000"));
-        UnityEngine.Debug.Log("Punishment summ: " + punishs.Sum().ToString("0.0000"));
-
         epochI = 0;
 
         var statesTrans = states.Transpose();
