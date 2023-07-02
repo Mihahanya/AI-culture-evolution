@@ -11,7 +11,7 @@ public class NN
     public Layer[] layers;
     private LayerData[] RMSpropCache;
     public int[] sizes;
-    public double learningRate = 0.001f;
+    public double learningRate = 0.003f;
     public double decayRate = 0.99;
 
     public NN(params int[] sizes)
@@ -124,16 +124,16 @@ public class NN
         return grads;
     }
 
-    public void BackProp(double[][,] states, double[][] errors) // sizes num x batch size x neurons in layer
+    public void BackProp(double[][,] states, double[,] errors) // sizes num x batch size x neurons in layer
     {
-        var batchSize = errors.Length;
+        var batchSize = errors.GetLength(0);
 
-        LayerData[] grads = CalculateGradients(states, errors.ToMatrix(), batchSize);
+        LayerData[] grads = CalculateGradients(states, errors, batchSize);
 
         ApplyGradientsRMSprop(grads, batchSize);
     }
     
-    public void BackProp(double[][][] states, double[][] errors) // sizes num x batch size x neurons in layer
+    public void BackProp(double[][][] states, double[,] errors) // sizes num x batch size x neurons in layer
     {
         double[][,] formStates = new double[states.Length][,];
         for (int i = 0; i < states.Length; i++)
@@ -144,9 +144,9 @@ public class NN
         BackProp(formStates, errors);
     }
 
-    public void BackProp(double[][] inputs, double[][] errors)
+    public void BackProp(double[][] inputs, double[,] errors)
     {
-        Debug.Assert(inputs.Length == errors.Length);
+        Debug.Assert(inputs.Length == errors.GetLength(0));
         Debug.Assert(inputs[0].Length == sizes[0]);
 
         var batchSize = inputs.Length;
@@ -178,7 +178,7 @@ public class NN
             double[,] g = grads[i].weights;
             double[] gB = grads[i].biases;
 
-            double[,] gSqr = g.Apply(x => x * x);
+            double[,] gSqr = g.Pow(2);
             double[] gSqrB = gB.Apply(x => x * x);
 
             RMSpropCache[i].weights = RMSpropCache[i].weights.Multiply(decayRate).Add(gSqr.Multiply(1d - decayRate));
