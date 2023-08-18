@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
@@ -11,7 +12,8 @@ using SkillsBaseAndVal = Pair<float, float>;
 
 public class Genome
 {
-    public NN nn;
+    public NN actNN;
+    public NN rewNN;
 
     public Dictionary<string, SkillsBaseAndVal> skills;
 
@@ -19,7 +21,11 @@ public class Genome
 
     public Genome(int inputSize, int outputSize)
     {
-        nn = new NN(inputSize, 15, 10, outputSize);
+        actNN = new NN(inputSize, 10, outputSize);
+        actNN.learningRate = 0.01;
+
+        rewNN = new NN(actNN.sizes.Sum(), 10, 2);
+        rewNN.learningRate = 0.001;
 
         r = UnityEngine.Random.Range(0f, 1f);
         g = UnityEngine.Random.Range(0f, 1f);
@@ -38,7 +44,8 @@ public class Genome
 
     public Genome(Genome refGenome)
     {
-        nn = new NN(refGenome.nn);
+        actNN = new NN(refGenome.actNN);
+        rewNN = new NN(refGenome.rewNN);
 
         r = refGenome.r;
         g = refGenome.g;
@@ -59,9 +66,11 @@ public class Genome
 
     public void Mutate(float weightMutAmpl, float weightProb, float skillMutAmpl, float skillProb)
     {
-        for (int i = 0; i < nn.layers.Length; i++)
+        // TODO: rev nn mutation
+
+        for (int i = 0; i < actNN.layers.Length; i++)
         {
-            nn.layers[i].mutateLayer(weightMutAmpl, weightProb);
+            actNN.layers[i].mutateLayer(weightMutAmpl, weightProb);
         }
 
         foreach (var skill in skills)

@@ -10,6 +10,7 @@ public class NN
 {
     public Layer[] layers;
     private LayerData[] RMSpropCache;
+    public double[] inputs;
     public int[] sizes;
     public double learningRate = 0.003f;
     public double decayRate = 0.99;
@@ -45,9 +46,15 @@ public class NN
         
     }
 
-    public double[] FeedForward(double[] inputs)
+    public double[] FeedForward(double[] inputs, bool saveInputs=true)
     {
         Debug.Assert(inputs.Length == sizes[0]);
+
+        if (saveInputs)
+        {
+            this.inputs = new double[inputs.Length];
+            Array.Copy(inputs, this.inputs, inputs.Length);
+        }
 
         layers[0].calcLayer(inputs);
 
@@ -124,7 +131,7 @@ public class NN
         return grads;
     }
 
-    public void BackProp(double[][,] states, double[,] errors) // sizes num x batch size x neurons in layer
+    public void BackProp(double[][,] states, double[,] errors) // main backprop, sizes num x batch size x neurons in layer
     {
         var batchSize = errors.GetLength(0);
 

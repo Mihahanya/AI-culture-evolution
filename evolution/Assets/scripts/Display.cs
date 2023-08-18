@@ -8,24 +8,17 @@ using UnityEngine.UI;
 public class Display : MonoBehaviour
 {
     public GameObject panel;
-    public GameObject neuronOrient;
-    public GameObject weightsOrient;
     public Text dataOut;
     public Text skillData;
     public Text agentsCounter;
     public Text fpsText;
     public Text epochDurationText;
-    public GameObject lineBase;
-
-    public float neuronsRadius = 0.1f;
 
     public bool isFollowObject = false;    
     public GameObject followingObject;
 
-    public GameObject circle;
-    GameObject[] neuronsViss;
-
-    Vector2 visualizationSizes;
+    public DrawNN drawRewNN;
+    public DrawNN drawActNN;
 
     float timer = 10;
     public int bacteriaCount = 0;
@@ -46,9 +39,6 @@ public class Display : MonoBehaviour
         camera cam = GetComponent<camera>();
 
         panel.SetActive(false);
-
-        var orient = neuronOrient.GetComponent<RectTransform>();
-        visualizationSizes = orient.sizeDelta;
     }
 
     void Update()
@@ -115,12 +105,10 @@ public class Display : MonoBehaviour
                     foreach (var skill in objData.genome.skills)
                         skillsTextData += skill.Key + ": " + (skill.Value.First * skill.Value.Second) + "\n";
 
-
-                    var nn = objData.genome.nn;
-                    UpdateWeights(nn);
-                    neuronsViss = DrawReturnNeurons(nn);
-
                     skillData.text = skillsTextData;
+
+                    drawActNN.Visualize(objData.genome.actNN);
+                    drawRewNN.Visualize(objData.genome.rewNN);
                 }
                 else Close();
             }
@@ -135,35 +123,13 @@ public class Display : MonoBehaviour
         {
             var objData = followingObject.GetComponent<Agent>();
 
-            var layers = objData.genome.nn.layers;
-
-            int t = 0;
-            for (t = 0; t < objData.inputs.Length; t++)
-            {
-                var input = (float)(objData.inputs[t] + 1f) / 2f;
-                neuronsViss[t].GetComponent<SpriteRenderer>().color = new Color(1f - input, input, 0.5f) / 1.05f;
-            }
-
-            for (int i = 0; i < layers.Length; i++)
-            {
-                for (int j = 0; j < layers[i].neurons.Length; j++)
-                {
-                    var neuron = (float)layers[i].neurons[j];
-                    var neuronInterpolated = (neuron + 1f) / 2f;
-
-                    neuronsViss[t].GetComponent<SpriteRenderer>().color = new Color(1f - neuronInterpolated, neuronInterpolated, 0.5f) / 1.05f;
-
-                    t++;
-                }
-            }
-
             dataOut.text = "";
             dataOut.text += "Energy: " + objData.energy + "\n";
             dataOut.text += "Age: " + objData.age + "\n";
             dataOut.text += "Generation: " + objData.generation + "\n";
 
             dataOut.text += "Shape: ";
-            foreach (var s in objData.genome.nn.sizes) dataOut.text += s.ToString() + " ";
+            foreach (var s in objData.genome.actNN.sizes) dataOut.text += s.ToString() + " ";
             dataOut.text += "\n";
         }
 
@@ -193,124 +159,12 @@ public class Display : MonoBehaviour
         framesCount++;
     }
 
-    GameObject[] DrawReturnNeurons(NN nn)
-    {
-        int[] sizes = nn.sizes;
-
-        GameObject[] neuronsViss = new GameObject[sizes.Sum()];
-
-        int t = 0;
-        for (int i = 0; i < sizes.Length; i++)
-        {
-            for (int j = 0; j < sizes[i] + (i < sizes.Length-1 ? 1 : 0); j++)
-            {
-                GameObject neuronVisual = (GameObject)UnityEngine.Object.Instantiate(circle);
-                neuronVisual.transform.parent = neuronOrient.transform;
-                neuronVisual.transform.localScale = UnityEngine.Vector3.one * neuronsRadius;
-                neuronVisual.GetComponent<SpriteRenderer>().color = new Color(0f, 1f, 0.5f);
-
-                Vector2 pos = new Vector2(i * visualizationSizes.x / (sizes.Length-1), j * visualizationSizes.y / (sizes[i]-1+1)); // +1 because bias
-
-                neuronVisual.AddComponent<RectTransform>();
-                RectTransform p = neuronVisual.GetComponent<RectTransform>();
-                p.anchoredPosition = pos - visualizationSizes / 2f;
-                p.anchoredPosition3D = new UnityEngine.Vector3(p.anchoredPosition.x, -p.anchoredPosition.y, 0f);
-
-                if (j != sizes[i])
-                {
-                    neuronsViss[t] = neuronVisual;
-                    t++;
-                }
-            }
-            
-        }
-
-        return neuronsViss;
-    }
-
-    public void UpdateWeights(NN nn) // Uses inside following Agent
-    {
-        foreach (Transform w in weightsOrient.transform)
-            Destroy(w.gameObject);
-
-
-        int[] sizes = nn.sizes;
-
-        // Weight max deviation
-
-        double amplitude = 0;
-        for (int i = 0; i < nn.layers.Length; i++)
-        {
-            double currentAmplitude = Matrix.Max(nn.layers[i].weights);
-            currentAmplitude = Math.Max(Matrix.Min(nn.layers[i].weights), currentAmplitude);
-
-            amplitude = Math.Max(amplitude, currentAmplitude);
-        }
-
-        // Weights lines
-
-        for (int i = 0; i < nn.layers.Length; i++) // Layers
-        {
-            var weights = nn.layers[i].weights;
-            for (int wi = 0; wi < sizes[i + 1]; wi++) // Ends
-            {
-                for (int wj = 0; wj < sizes[i] + 1; wj++) // Starts
-                {
-                    UnityEngine.Vector3 start = new UnityEngine.Vector3(i * visualizationSizes.x / (sizes.Length - 1),
-                                                wj * visualizationSizes.y / (sizes[i] - 1 + 1), 0f);
-
-                    UnityEngine.Vector3 end = new UnityEngine.Vector3((i + 1) * visualizationSizes.x / (sizes.Length - 1),
-                                              wi * visualizationSizes.y / (sizes[i + 1] - 1 + 1), 0f);
-
-                    double w;
-                    if (wj == sizes[i]) w = nn.layers[i].biases[wi];
-                    else w = weights[wi, wj];
-
-                    float aspect = (float)((float)w / amplitude);
-                    float thickness = Mathf.Max(Mathf.Abs(aspect) * neuronsRadius, 2f);
-
-                    float aspectInterpolated = (aspect + 1f) / 2f;
-
-                    DrawLineRectTransform(start, end, thickness, new Color(1f - aspectInterpolated, aspectInterpolated, 0.5f) / 2f);
-                }
-            }
-        }
-    }
-
-
-    void DrawLineRectTransform(Vector2 start, Vector2 end, float width, Color color)
-    {
-        GameObject myLine = (GameObject)UnityEngine.Object.Instantiate(lineBase);
-        //myLine.transform.parent = weightsOrient.transform;
-
-        RectTransform nnp = weightsOrient.GetComponent<RectTransform>();
-        RectTransform p = myLine.GetComponent<RectTransform>();
-        p.SetParent(nnp);
-        p.anchoredPosition = Vector2.zero;
-        p.sizeDelta = nnp.sizeDelta;
-        p.localScale = UnityEngine.Vector3.one;
-        p.anchoredPosition3D = new UnityEngine.Vector3(p.anchoredPosition.x, p.anchoredPosition.y, 1f);
-
-        LineRenderer lr = myLine.GetComponent<LineRenderer>();
-        lr.SetColors(color, color);
-        lr.SetWidth(width, width);
-
-        var zIndexing = new UnityEngine.Vector3(0f, 0f, -width / 100f);
-
-        lr.SetPosition(0, ((start - visualizationSizes / 2f) * new Vector2(1f, -1f)).xyz() + zIndexing);
-        lr.SetPosition(1, ((end - visualizationSizes / 2f) * new Vector2(1f, -1f)).xyz() + zIndexing);
-    }
-
-
     void Close()
     {
         if (followingObject != null) followingObject.GetComponent<Agent>().watchingByCamera = false;
 
-        foreach (Transform neur in neuronOrient.transform)
-            Destroy(neur.gameObject);
-    
-        foreach (Transform w in weightsOrient.transform)
-            Destroy(w.gameObject);
+        drawActNN.Close();
+        drawRewNN.Close();
     
         isFollowObject = false;
         panel.SetActive(false);

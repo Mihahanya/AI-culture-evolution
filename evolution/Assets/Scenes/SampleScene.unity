@@ -228,6 +228,8 @@ GameObject:
   - component: {fileID: 519420029}
   - component: {fileID: 519420030}
   - component: {fileID: 519420033}
+  - component: {fileID: 519420035}
+  - component: {fileID: 519420034}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -330,22 +332,54 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   panel: {fileID: 1451696139}
-  neuronOrient: {fileID: 1283027254}
-  weightsOrient: {fileID: 1656604022}
   dataOut: {fileID: 1967915454}
   skillData: {fileID: 1612995767}
   agentsCounter: {fileID: 1393097187}
   fpsText: {fileID: 1783069020}
   epochDurationText: {fileID: 1195575242}
-  lineBase: {fileID: 8106431410536791839, guid: 5855572e5765bb2419b209894c5b3c4b,
-    type: 3}
-  neuronsRadius: 9
   isFollowObject: 0
   followingObject: {fileID: 0}
-  circle: {fileID: 3261943952421775412, guid: f8bc0641b273f4a47b4cbf0e163ad421, type: 3}
+  drawRewNN: {fileID: 519420035}
+  drawActNN: {fileID: 519420034}
   bacteriaCount: 0
   deathCount: 0
   bornCount: 0
+--- !u!114 &519420034
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5985862bde88aac4abc4d5131d70819d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  neuronOrient: {fileID: 706747478}
+  neuronsRadius: 5
+  lineBase: {fileID: 8106431410536791839, guid: 5855572e5765bb2419b209894c5b3c4b,
+    type: 3}
+  circle: {fileID: 3261943952421775412, guid: f8bc0641b273f4a47b4cbf0e163ad421, type: 3}
+  update: 0
+--- !u!114 &519420035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5985862bde88aac4abc4d5131d70819d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  neuronOrient: {fileID: 1283027254}
+  neuronsRadius: 5
+  lineBase: {fileID: 8106431410536791839, guid: 5855572e5765bb2419b209894c5b3c4b,
+    type: 3}
+  circle: {fileID: 3261943952421775412, guid: f8bc0641b273f4a47b4cbf0e163ad421, type: 3}
+  update: 0
 --- !u!1 &665761002
 GameObject:
   m_ObjectHideFlags: 0
@@ -452,6 +486,41 @@ Transform:
   m_Father: {fileID: 118844186}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: -89.907}
+--- !u!1 &706747478
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 706747479}
+  m_Layer: 5
+  m_Name: rew vis
+  m_TagString: Untagged
+  m_Icon: {fileID: -964228994112308473, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &706747479
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 706747478}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1451696140}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 1493.2, y: -770}
+  m_SizeDelta: {x: 482.6, y: 496.2}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &827510630
 GameObject:
   m_ObjectHideFlags: 0
@@ -591,7 +660,7 @@ MonoBehaviour:
   countNewInSec: 0
   spreadX: 120
   spreadY: 120
-  prespawnedCount: 300
+  prespawnedCount: 10
   maxCount: 10000
   tagToCount: bacteria
 --- !u!4 &1003126803
@@ -747,7 +816,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1283027255}
   m_Layer: 5
-  m_Name: neurons visualisation
+  m_Name: act vis
   m_TagString: Untagged
   m_Icon: {fileID: -964228994112308473, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
@@ -769,8 +838,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 212.7, y: -741.2}
-  m_SizeDelta: {x: 374.3, y: 464.5}
+  m_AnchoredPosition: {x: 1493.2, y: -253.8}
+  m_SizeDelta: {x: 482.6, y: 485.6}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1294848033
 GameObject:
@@ -1157,7 +1226,7 @@ RectTransform:
   - {fileID: 1612995766}
   - {fileID: 1967915453}
   - {fileID: 1283027255}
-  - {fileID: 1656604023}
+  - {fileID: 706747479}
   m_Father: {fileID: 1294848037}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1390,41 +1459,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1612995765}
   m_CullTransparentMesh: 0
---- !u!1 &1656604022
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1656604023}
-  m_Layer: 5
-  m_Name: weights visualisation
-  m_TagString: Untagged
-  m_Icon: {fileID: -964228994112308473, guid: 0000000000000000d000000000000000, type: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1656604023
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1656604022}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 1451696140}
-  m_RootOrder: 3
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 212.7, y: -741.2}
-  m_SizeDelta: {x: 374.3, y: 464.5}
-  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1783069018
 GameObject:
   m_ObjectHideFlags: 0

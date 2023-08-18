@@ -6,7 +6,7 @@ using Accord;
 public class Agent : MonoBehaviour
 {
     [NonSerialized]
-    public bool exhaustion = true;
+    public bool exhaustion = false;
     [NonSerialized]
     public bool encourage = true;
 
@@ -21,9 +21,10 @@ public class Agent : MonoBehaviour
     public int generation = 0;
 
     public Genome genome;
-    public Epoch epoch;
+    public Epoch epoch_of_act;
+    public Epoch epoch_of_rew;
 
-    private const int eyesCount = 6;
+    private const int eyesCount = 10;
     private const int memoryNeuronsN = 5;
     
     // move, memory, is divide, is eat, is attack
@@ -79,7 +80,8 @@ public class Agent : MonoBehaviour
         speedK = genome.skills["speed"].First;
         angSpeedK = genome.skills["angularSpeed"].First;
 
-        epoch = new Epoch(Config.stepsPerEpoch);
+        epoch_of_act = new Epoch(Config.stepsPerEpoch);
+        epoch_of_rew = new Epoch(Config.stepsPerEpoch);
     }
 
     void LateUpdate()
@@ -143,7 +145,7 @@ public class Agent : MonoBehaviour
 
         // Decode outputs
 
-        outputs = genome.nn.FeedForward(inputs);
+        outputs = genome.actNN.FeedForward(inputs);
 
         Vector2 movOut = new Vector2((float)outputs[0], (float)outputs[1]).normalized;
         float rotOut = (float)outputs[2];
@@ -167,8 +169,8 @@ public class Agent : MonoBehaviour
         rb.MoveRotation(rb.rotation + rotOut * angSpeed);
         
         //if (energy >= needEnergyToDivide)
-        if (isDivideOut && energy >= needEnergyToDivide)
-            DivideYourself();
+        //if (isDivideOut && energy >= needEnergyToDivide)
+        //    DivideYourself();
 
         // Movement coasts
 
@@ -212,13 +214,25 @@ public class Agent : MonoBehaviour
 
             //reward += findedRays_n / eyesCount * 0.001f;
 
-            epoch.AddEpoch(inputs, genome.nn.GetState(), reward, punishing);
+            var act_nn_state = genome.actNN.GetState().SelectMany(subArray => subArray).ToArray();
+            act_nn_state = inputs.Concat(act_nn_state).ToArray();
 
-            if (epoch.IsDone())
+            var rew_pun = genome.rewNN.FeedForward(act_nn_state);
+
+            epoch_of_act.AddEpoch(inputs, genome.actNN.GetState(), rew_pun[0], rew_pun[1]);
+            
+            epoch_of_rew.AddEpoch(act_nn_state, genome.rewNN.GetState(), reward, punishing);
+
+            if (epoch_of_act.IsDone())
             {
-                epoch.Apply(ref genome.nn);
-                
-                if (watchingByCamera) Camera.main.GetComponent<Display>().UpdateWeights(genome.nn);
+                epoch_of_act.Apply(ref genome.actNN);
+                epoch_of_rew.Apply(ref genome.rewNN);
+
+                if (watchingByCamera)
+                {
+                    Camera.main.GetComponent<Display>().drawActNN.Visualize(genome.actNN);
+                    Camera.main.GetComponent<Display>().drawRewNN.Visualize(genome.rewNN);
+                }
             }
         }
         reward = 0f;
