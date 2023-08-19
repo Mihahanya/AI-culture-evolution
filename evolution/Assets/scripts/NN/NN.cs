@@ -24,8 +24,6 @@ public class NN
         for (int i = 1; i < sizes.Length; i++)
         {
             layers[i-1] = new Layer(sizes[i-1], sizes[i]);
-            layers[i-1].initRandom(-1f, 1f);
-            
             RMSpropCache[i-1] = new LayerData(sizes[i-1], sizes[i]);
         }
     }
@@ -44,6 +42,24 @@ public class NN
         for (int i = 1; i < sizes.Length; i++)
             RMSpropCache[i-1] = new LayerData(sizes[i-1], sizes[i]);
         
+    }
+
+    public void SetActivation(Func<double, double> f)
+    {
+        for (int i = 0; i < layers.Length; i++)
+            layers[i].activation = f;
+    }
+    
+    public void SetDerivative(Func<double, double> f)
+    {
+        for (int i = 0; i < layers.Length; i++)
+            layers[i].derivative = f;
+    }
+
+    public void InitRandom()
+    {
+        for (int i = 0; i < layers.Length; i++)
+            layers[i].InitRandom();
     }
 
     public double[] FeedForward(double[] inputs, bool saveInputs=true)
@@ -188,12 +204,14 @@ public class NN
             double[,] gSqr = g.Pow(2);
             double[] gSqrB = gB.Apply(x => x * x);
 
+            // chw = chw * decayRate + g^2 * (1 - decayRate)
             RMSpropCache[i].weights = RMSpropCache[i].weights.Multiply(decayRate).Add(gSqr.Multiply(1d - decayRate));
             RMSpropCache[i].biases = RMSpropCache[i].biases.Multiply(decayRate).Add(gSqrB.Multiply(1d - decayRate));
 
             double[,] rmspropsqrt = RMSpropCache[i].weights.Apply(Math.Sqrt);
             double[] rmspropsqrtB = RMSpropCache[i].biases.Apply(Math.Sqrt);
 
+            // w = w + g * (lr / batchSize) / (sqrt(chw) + 1e-5)
             layers[i].weights = layers[i].weights.Add(g.Multiply(learningRate / batchSize).Divide(rmspropsqrt.Add(1e-5)));
             layers[i].biases = layers[i].biases.Add(gB.Multiply(learningRate / batchSize).Divide(rmspropsqrtB.Add(1e-5)));
         }
@@ -206,11 +224,6 @@ public class NN
             layers[i].weights = layers[i].weights.Add(grads[i].weights.Multiply(learningRate / batchSize));
             layers[i].biases = layers[i].biases.Add(grads[i].biases.Multiply(learningRate / batchSize));
         }
-    }
-
-    double arctanh(double x)
-    {
-        return 1f - (float)Math.Pow(Math.Tanh(x), 2f);
     }
 
 }

@@ -23,9 +23,17 @@ public class Genome
     {
         actNN = new NN(inputSize, 10, outputSize);
         actNN.learningRate = 0.01;
-
-        rewNN = new NN(actNN.sizes.Sum(), 10, 2);
+        actNN.InitRandom();
+        
+        rewNN = new NN(actNN.sizes.Sum(), 5, 2);
         rewNN.learningRate = 0.001;
+        rewNN.InitRandom();
+        rewNN.SetActivation(relu);
+        rewNN.SetDerivative(relu_der);
+        //rewNN.SetActivation(relu);
+        //rewNN.SetDerivative(relu_der);
+        //rewNN.layers[rewNN.layers.Length-1].activation = sigmoid; 
+        //rewNN.layers[rewNN.layers.Length-1].derivative = sigmoid_der;
 
         r = UnityEngine.Random.Range(0f, 1f);
         g = UnityEngine.Random.Range(0f, 1f);
@@ -66,8 +74,11 @@ public class Genome
 
     public void Mutate(float weightMutAmpl, float weightProb, float skillMutAmpl, float skillProb)
     {
-        // TODO: rev nn mutation
-
+        for (int i = 0; i < rewNN.layers.Length; i++)
+        {
+            rewNN.layers[i].mutateLayer(0.07, 0.03);
+        }
+        
         for (int i = 0; i < actNN.layers.Length; i++)
         {
             actNN.layers[i].mutateLayer(weightMutAmpl, weightProb);
@@ -92,5 +103,26 @@ public class Genome
         if (UnityEngine.Random.value < colorProb) b = Mathf.Clamp01(b + UnityEngine.Random.Range(-colorD, colorD));
     }
 
+    public static double sigmoid(double value)
+    {
+        return 1d / (1d + (double)Math.Exp(-value));
+    }
     
+    public static double sigmoid_der(double value)
+    {
+        return sigmoid(value) * (1 - sigmoid(value));
+    }
+    
+    public static double relu(double value)
+    {
+        if (value < 0) return value * 0.01d;
+        else if (value > 1) return (value - 1d) * 0.01d + 1d;
+        else return value;
+    }
+
+    public static double relu_der(double value)
+    {
+        if (value < 0 || value > 1) return 0.01;
+        else return 1;
+    }
 }

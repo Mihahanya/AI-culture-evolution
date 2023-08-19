@@ -104,7 +104,7 @@ public class Epoch
         double mean = newGrades.Mean();
         //double dev = StandardDeviation(newGrades);
 
-        newGrades = newGrades.Subtract(mean);
+        //newGrades = newGrades.Subtract(mean);
 
         return newGrades;
     }

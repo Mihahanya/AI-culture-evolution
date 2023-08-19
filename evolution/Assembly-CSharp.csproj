@@ -59,6 +59,7 @@
      <Compile Include="Assets\scripts\Display.cs" />
      <Compile Include="Assets\scripts\DrawNN.cs" />
      <Compile Include="Assets\scripts\Epoche.cs" />
+     <Compile Include="Assets\scripts\FoodUIControl.cs" />
      <Compile Include="Assets\scripts\Genome.cs" />
      <Compile Include="Assets\scripts\NN\Layer.cs" />
      <Compile Include="Assets\scripts\NN\NN.cs" />

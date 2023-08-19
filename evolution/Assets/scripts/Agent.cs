@@ -6,7 +6,7 @@ using Accord;
 public class Agent : MonoBehaviour
 {
     [NonSerialized]
-    public bool exhaustion = false;
+    public bool exhaustion = true;
     [NonSerialized]
     public bool encourage = true;
 
@@ -169,8 +169,8 @@ public class Agent : MonoBehaviour
         rb.MoveRotation(rb.rotation + rotOut * angSpeed);
         
         //if (energy >= needEnergyToDivide)
-        //if (isDivideOut && energy >= needEnergyToDivide)
-        //    DivideYourself();
+        if (isDivideOut && energy >= needEnergyToDivide)
+            DivideYourself();
 
         // Movement coasts
 
@@ -180,7 +180,7 @@ public class Agent : MonoBehaviour
             consumption += movOut.magnitude * Mathf.Abs(speedK);
             consumption += Mathf.Abs(rotOut) * Mathf.Abs(angSpeedK);
             if (isEatOut) consumption += eatOut * nonLiveFoodAssimil * 0.1f;
-            if (isAttackOut) consumption += attackOut * liveFoodAssimil * 0.7f;
+            if (isAttackOut) consumption += attackOut * liveFoodAssimil * 0.3f;
         
             //consumption *= Mathf.Pow(genome.skills["size"].First, 2f) * 0.35f;
             consumption *= 0.4f;
@@ -230,8 +230,8 @@ public class Agent : MonoBehaviour
 
                 if (watchingByCamera)
                 {
-                    Camera.main.GetComponent<Display>().drawActNN.Visualize(genome.actNN);
-                    Camera.main.GetComponent<Display>().drawRewNN.Visualize(genome.rewNN);
+                    Camera.main.GetComponent<Display>().drawActNN.UpdateWeights();
+                    Camera.main.GetComponent<Display>().drawRewNN.UpdateWeights();
                 }
             }
         }
@@ -246,13 +246,13 @@ public class Agent : MonoBehaviour
         {
             float k = nonLiveFoodAssimil * eatOut;
             reward += 1f * k;
-            energy += 2.5f * Config.stepsPerEpoch * k;
+            energy += 5f * Config.stepsPerEpoch * k; 
             Destroy(col.gameObject);
         }
         
         if (col.gameObject.tag == "bacteria" && isAttackOut)
         {
-            reward += 1f * liveFoodAssimil * attackOut;
+            reward += 1.5f * liveFoodAssimil * attackOut;
 
             var pray = col.gameObject.GetComponent<Agent>();
             //float getting = 2.5f * Config.stepsPerEpoch * k;
@@ -277,11 +277,12 @@ public class Agent : MonoBehaviour
         agentMind.generation = generation + 1;
         agentMind.age = 0;
 
+        // TODO: change
         agentMind.genome = new Genome(genome);
         if (UnityEngine.Random.value < 0.5) 
-            agentMind.genome.Mutate(0.5f, 0.2f, 0.2f, 0.1f);
+            agentMind.genome.Mutate(0.9f, 0.1f, 0.2f, 0.1f);
         else
-            agentMind.genome.Mutate(0.2f, 0.7f, 0.2f, 0.1f);
+            agentMind.genome.Mutate(0.1f, 0.8f, 0.2f, 0.1f);
 
         agentMind.InitAgent();
 
