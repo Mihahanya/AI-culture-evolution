@@ -27,6 +27,8 @@ public class Display : MonoBehaviour
 
     float frameTimer = 1f;
     int framesCount = 0;
+
+    public float avgRewRew, avgRewPun, avgActRew, avgActPun;
     
     void Start()
     {
@@ -127,6 +129,10 @@ public class Display : MonoBehaviour
             dataOut.text += "Energy: " + objData.energy + "\n";
             dataOut.text += "Age: " + objData.age + "\n";
             dataOut.text += "Generation: " + objData.generation + "\n";
+            dataOut.text += "Average reward of rewNN: " + avgRewRew + "\n";
+            dataOut.text += "Average punishing of rewNN: " + avgRewPun + "\n";
+            dataOut.text += "Average reward of actNN: " + avgActRew + "\n";
+            dataOut.text += "Average punishing of actNN: " + avgActPun + "\n";
 
             dataOut.text += "Shape: ";
             foreach (var s in objData.genome.actNN.sizes) dataOut.text += s.ToString() + " ";

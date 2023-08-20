@@ -21,6 +21,7 @@ public class Genome
 
     public Genome(int inputSize, int outputSize)
     {
+        // SETTEING DATA
         actNN = new NN(inputSize, 10, outputSize);
         actNN.learningRate = 0.01;
         actNN.InitRandom();
@@ -41,12 +42,13 @@ public class Genome
 
         skills = new Dictionary<string, SkillsBaseAndVal>()
         {
+            // SETTEING DATA
             ["speed"] = new SkillsBaseAndVal(1f, 0.7f),
             ["angularSpeed"] = new SkillsBaseAndVal(1f, 10f),
-            ["foodAspect"] = new SkillsBaseAndVal(0.98f, 1f), // non-live food assimilation like green circles
+            ["foodAspect"] = new SkillsBaseAndVal(0.75f, 1f), // non-live food assimilation like green circles
             ["memoryFactor"] = new SkillsBaseAndVal(0.6f, 1f), //
             //["size"] = new SkillsBaseAndVal(1f, 0.5f),
-            ["needEnergyDivide"] = new SkillsBaseAndVal(15f, Config.stepsPerEpoch),
+            ["needEnergyDivide"] = new SkillsBaseAndVal(15f*3, Config.stepsPerEpoch),
         };
     }
 
@@ -76,6 +78,7 @@ public class Genome
     {
         for (int i = 0; i < rewNN.layers.Length; i++)
         {
+            // SETTEING DATA
             rewNN.layers[i].mutateLayer(0.07, 0.03);
         }
         
@@ -96,7 +99,7 @@ public class Genome
         skills["speed"].First = Mathf.Clamp(skills["speed"].First, 0.1f, 1.1f);
         //skills["speed"].First = 1f;
 
-        float colorD = 30f / 225f;
+        float colorD = 15f / 225f;
         float colorProb = 0.6f;
         if (UnityEngine.Random.value < colorProb) r = Mathf.Clamp01(r + UnityEngine.Random.Range(-colorD, colorD));
         if (UnityEngine.Random.value < colorProb) g = Mathf.Clamp01(g + UnityEngine.Random.Range(-colorD, colorD));

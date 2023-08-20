@@ -24,9 +24,10 @@ public class Agent : MonoBehaviour
     public Epoch epoch_of_act;
     public Epoch epoch_of_rew;
 
+    // SETTEING DATA
     private const int eyesCount = 10;
     private const int memoryNeuronsN = 5;
-    
+
     // move, memory, is divide, is eat, is attack
     private const int outputCount = 3 + memoryNeuronsN + 1 + 1 + 1; 
 
@@ -101,7 +102,7 @@ public class Agent : MonoBehaviour
 
         // World vision
         double[] visionData = new double[eyesCount*4];
-        float maxDist = 15f;
+        float maxDist = 12f;
 
         for (int i = 0; i < eyesCount; i++)
         {
@@ -118,7 +119,7 @@ public class Agent : MonoBehaviour
                 visionData[i*4 + 2] = hitColor.g;
                 visionData[i*4 + 3] = hitColor.b;
 
-                Debug.DrawRay(from, hit.distance * direction, hitColor);
+                //Debug.DrawRay(from, hit.distance * direction, hitColor);
             }
             else
             {
@@ -176,6 +177,7 @@ public class Agent : MonoBehaviour
 
         if (exhaustion)
         {
+            // SETTEING DATA
             var consumption = 0f;
             consumption += movOut.magnitude * Mathf.Abs(speedK);
             consumption += Mathf.Abs(rotOut) * Mathf.Abs(angSpeedK);
@@ -195,6 +197,12 @@ public class Agent : MonoBehaviour
         {
             Camera.main.GetComponent<Display>().deathCount++;
             Destroy(gameObject);
+        }
+
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            if (UnityEngine.Random.value < 0.3)
+                Destroy(gameObject);
         }
 
         // Rewarding
@@ -230,8 +238,13 @@ public class Agent : MonoBehaviour
 
                 if (watchingByCamera)
                 {
-                    Camera.main.GetComponent<Display>().drawActNN.UpdateWeights();
-                    Camera.main.GetComponent<Display>().drawRewNN.UpdateWeights();
+                    var disp = Camera.main.GetComponent<Display>();
+                    disp.drawActNN.UpdateWeights();
+                    disp.drawRewNN.UpdateWeights();
+                    disp.avgRewRew = (float)epoch_of_rew.rewards.Sum() / Config.stepsPerEpoch;
+                    disp.avgRewPun = (float)epoch_of_rew.punishs.Sum() / Config.stepsPerEpoch;
+                    disp.avgActRew = (float)epoch_of_act.rewards.Sum() / Config.stepsPerEpoch;
+                    disp.avgActPun = (float)epoch_of_act.punishs.Sum() / Config.stepsPerEpoch;
                 }
             }
         }
@@ -244,14 +257,16 @@ public class Agent : MonoBehaviour
     {
         if (col.gameObject.tag == "food" && isEatOut)
         {
+            // SETTEING DATA
             float k = nonLiveFoodAssimil * eatOut;
             reward += 1f * k;
-            energy += 5f * Config.stepsPerEpoch * k; 
+            energy += 15f * Config.stepsPerEpoch * k; 
             Destroy(col.gameObject);
         }
         
         if (col.gameObject.tag == "bacteria" && isAttackOut)
         {
+            // SETTEING DATA
             reward += 1.5f * liveFoodAssimil * attackOut;
 
             var pray = col.gameObject.GetComponent<Agent>();
@@ -265,6 +280,8 @@ public class Agent : MonoBehaviour
 
     void DivideYourself()
     {
+        // TODO: pairing
+
         //return;
 
         reward += 7;
@@ -277,7 +294,7 @@ public class Agent : MonoBehaviour
         agentMind.generation = generation + 1;
         agentMind.age = 0;
 
-        // TODO: change
+        // SETTING DATA
         agentMind.genome = new Genome(genome);
         if (UnityEngine.Random.value < 0.5) 
             agentMind.genome.Mutate(0.9f, 0.1f, 0.2f, 0.1f);
