@@ -15,6 +15,9 @@ public class Genome
     public NN actNN;
     public NN rewNN;
 
+    public Epoch actNNepoch;
+    public Epoch rewNNepoch;
+
     public Dictionary<string, SkillsBaseAndVal> skills;
 
     public float r, g, b;
@@ -31,10 +34,6 @@ public class Genome
         rewNN.InitRandom();
         rewNN.SetActivation(relu);
         rewNN.SetDerivative(relu_der);
-        //rewNN.SetActivation(relu);
-        //rewNN.SetDerivative(relu_der);
-        //rewNN.layers[rewNN.layers.Length-1].activation = sigmoid; 
-        //rewNN.layers[rewNN.layers.Length-1].derivative = sigmoid_der;
 
         r = UnityEngine.Random.Range(0f, 1f);
         g = UnityEngine.Random.Range(0f, 1f);
@@ -50,6 +49,11 @@ public class Genome
             //["size"] = new SkillsBaseAndVal(1f, 0.5f),
             ["needEnergyDivide"] = new SkillsBaseAndVal(15f*3, Config.stepsPerEpoch),
         };
+
+        actNNepoch = new Epoch(Config.stepsPerEpoch);
+        rewNNepoch = new Epoch(Config.stepsPerEpoch);
+        rewNNepoch.roundFunc =       x => x < 0.5 ? 0d : 1d;
+        rewNNepoch.invertRoundFunc = x => x > 0.5 ? 0d : 1d;
     }
 
     public Genome(Genome refGenome)
@@ -66,6 +70,26 @@ public class Genome
         {
             var val = new SkillsBaseAndVal(entry.Value.First, entry.Value.Second);
             skills.Add(entry.Key, val);
+        }
+
+        actNNepoch = new Epoch(refGenome.actNNepoch);
+        rewNNepoch = new Epoch(refGenome.rewNNepoch);
+    }
+
+    public void Cross(Genome gen)
+    {
+        actNN.Cross(gen.actNN);
+        rewNN.Cross(gen.rewNN);
+
+        r = (r + gen.r) / 2;
+        g = (g + gen.g) / 2;
+        b = (b + gen.b) / 2;
+
+        List<string> keyList = new List<string>(skills.Keys);
+        foreach (string entry in keyList)
+        {
+            if (UnityEngine.Random.value < 0.5)
+                skills[entry] = gen.skills[entry];
         }
     }
 

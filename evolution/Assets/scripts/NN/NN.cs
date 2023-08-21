@@ -1,4 +1,5 @@
 using Accord.Math;
+using Accord.Math.Optimization.Losses;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -42,6 +43,12 @@ public class NN
         for (int i = 1; i < sizes.Length; i++)
             RMSpropCache[i-1] = new LayerData(sizes[i-1], sizes[i]);
         
+    }
+
+    public void Cross(NN nn)
+    {
+        for (int i = 0; i < layers.Length; i++)
+            layers[i].Cross(nn.layers[i]);
     }
 
     public void SetActivation(Func<double, double> f)

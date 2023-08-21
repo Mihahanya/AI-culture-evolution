@@ -174,6 +174,8 @@ public class Display : MonoBehaviour
     
         isFollowObject = false;
         panel.SetActive(false);
+
+        avgRewRew = avgRewPun = avgActRew = avgActPun = 0;
     }
 
 }

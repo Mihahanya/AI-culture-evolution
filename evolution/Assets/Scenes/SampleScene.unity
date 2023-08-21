@@ -424,6 +424,10 @@ MonoBehaviour:
   bacteriaCount: 0
   deathCount: 0
   bornCount: 0
+  avgRewRew: 0
+  avgRewPun: 0
+  avgActRew: 0
+  avgActPun: 0
 --- !u!114 &519420034
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -893,10 +897,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   obj: {fileID: 2028690676123972970, guid: 3e25b58188b42924baa862563f275b92, type: 3}
   countNewInSec: 700
-  spreadX: 120
-  spreadY: 120
+  spreadX: 150
+  spreadY: 150
   prespawnedCount: 1000
-  maxCount: 1000
+  maxCount: 800
   tagToCount: food
 --- !u!1 &1195575240
 GameObject:

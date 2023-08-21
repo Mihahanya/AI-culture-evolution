@@ -20,12 +20,22 @@ public class Epoch
 
     private int epochI = 0;
 
+    public Func<double, double> roundFunc =       x => x < 0d ? -1d : 1d;
+    public Func<double, double> invertRoundFunc = x => x > 0d ? -1d : 1d;
+
     public Epoch(int size)
     {
         this.size = size;
         rewards = new double[size];
         punishs = new double[size];
         states = new double[size][][];
+    }
+
+    public Epoch(Epoch e) : this(e.size)
+    {
+        gamma = e.gamma;
+        roundFunc = e.roundFunc;
+        invertRoundFunc = e.invertRoundFunc;
     }
 
     public void AddEpoch(double[] input, double[][] state, double reward, double punish)
@@ -63,13 +73,11 @@ public class Epoch
 
         double[,] outs = statesTrans[statesTrans.Length-1].ToMatrix();
 
-        double[,] explicitOuts = ToExplicitOutput(outs);
-
         double[] discountedReward = NormGrade(rewards);
         double[] discountedPuns = NormGrade(punishs);
         
-        double[,] dersR = explicitOuts.Subtract(outs).TransposeAndDotWithDiagonal(discountedReward).Transpose();
-        double[,] dersP = explicitOuts.Multiply(-1d).Subtract(outs).TransposeAndDotWithDiagonal(discountedPuns).Transpose();
+        double[,] dersR = outs.Apply(roundFunc)      .Subtract(outs).TransposeAndDotWithDiagonal(discountedReward).Transpose();
+        double[,] dersP = outs.Apply(invertRoundFunc).Subtract(outs).TransposeAndDotWithDiagonal(discountedPuns).Transpose();
 
         double[,] ders = dersR.Add(dersP);
 
@@ -79,12 +87,12 @@ public class Epoch
 
     double[,] ToExplicitOutput(double[,] outputs)
     {
-        return outputs.Apply(x => x < 0d ? -1d : 1d);
+        return outputs.Apply(roundFunc);
     }
 
     double[][] ToExplicitOutput(double[][] outputs)
     {
-        return outputs.Apply(x => x.Apply(y => y < 0d ? -1d : 1d));
+        return outputs.Apply(x => x.Apply(roundFunc));
     }
 
     double[] NormGrade(double[] grade)

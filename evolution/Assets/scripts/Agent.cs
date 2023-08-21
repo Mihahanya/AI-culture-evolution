@@ -21,8 +21,6 @@ public class Agent : MonoBehaviour
     public int generation = 0;
 
     public Genome genome;
-    public Epoch epoch_of_act;
-    public Epoch epoch_of_rew;
 
     // SETTEING DATA
     private const int eyesCount = 10;
@@ -80,9 +78,6 @@ public class Agent : MonoBehaviour
 
         speedK = genome.skills["speed"].First;
         angSpeedK = genome.skills["angularSpeed"].First;
-
-        epoch_of_act = new Epoch(Config.stepsPerEpoch);
-        epoch_of_rew = new Epoch(Config.stepsPerEpoch);
     }
 
     void LateUpdate()
@@ -168,10 +163,6 @@ public class Agent : MonoBehaviour
                         (transform.up.xy() * movOut.y + transform.right.xy() * movOut.x) * speed);
         
         rb.MoveRotation(rb.rotation + rotOut * angSpeed);
-        
-        //if (energy >= needEnergyToDivide)
-        if (isDivideOut && energy >= needEnergyToDivide)
-            DivideYourself();
 
         // Movement coasts
 
@@ -227,24 +218,24 @@ public class Agent : MonoBehaviour
 
             var rew_pun = genome.rewNN.FeedForward(act_nn_state);
 
-            epoch_of_act.AddEpoch(inputs, genome.actNN.GetState(), rew_pun[0], rew_pun[1]);
+            genome.actNNepoch.AddEpoch(inputs, genome.actNN.GetState(), rew_pun[0], rew_pun[1]);
             
-            epoch_of_rew.AddEpoch(act_nn_state, genome.rewNN.GetState(), reward, punishing);
+            genome.rewNNepoch.AddEpoch(act_nn_state, genome.rewNN.GetState(), reward, punishing);
 
-            if (epoch_of_act.IsDone())
+            if (genome.actNNepoch.IsDone())
             {
-                epoch_of_act.Apply(ref genome.actNN);
-                epoch_of_rew.Apply(ref genome.rewNN);
+                genome.actNNepoch.Apply(ref genome.actNN);
+                genome.rewNNepoch.Apply(ref genome.rewNN);
 
                 if (watchingByCamera)
                 {
                     var disp = Camera.main.GetComponent<Display>();
                     disp.drawActNN.UpdateWeights();
                     disp.drawRewNN.UpdateWeights();
-                    disp.avgRewRew = (float)epoch_of_rew.rewards.Sum() / Config.stepsPerEpoch;
-                    disp.avgRewPun = (float)epoch_of_rew.punishs.Sum() / Config.stepsPerEpoch;
-                    disp.avgActRew = (float)epoch_of_act.rewards.Sum() / Config.stepsPerEpoch;
-                    disp.avgActPun = (float)epoch_of_act.punishs.Sum() / Config.stepsPerEpoch;
+                    disp.avgRewRew = (float)genome.rewNNepoch.rewards.Sum() / Config.stepsPerEpoch;
+                    disp.avgRewPun = (float)genome.rewNNepoch.punishs.Sum() / Config.stepsPerEpoch;
+                    disp.avgActRew = (float)genome.actNNepoch.rewards.Sum() / Config.stepsPerEpoch;
+                    disp.avgActPun = (float)genome.actNNepoch.punishs.Sum() / Config.stepsPerEpoch;
                 }
             }
         }
@@ -276,37 +267,35 @@ public class Agent : MonoBehaviour
             pray.energy -= injury;
             pray.pain += attackOut;
         }
-    }
 
-    void DivideYourself()
-    {
-        // TODO: pairing
+        // Dividing
+        if (col.gameObject.tag == "bacteria" && isDivideOut && energy >= needEnergyToDivide)
+        {
+            reward += 7;
 
-        //return;
+            GameObject b = (GameObject)UnityEngine.Object.Instantiate(bacteriaPrefab);
+            b.transform.position = transform.position;
 
-        reward += 7;
+            var agentMind = b.GetComponent<Agent>();
 
-        GameObject b = (GameObject)UnityEngine.Object.Instantiate(bacteriaPrefab);
-        b.transform.position = transform.position;
+            agentMind.generation = generation + 1;
+            agentMind.age = 0;
 
-        var agentMind = b.GetComponent<Agent>();
+            // SETTING DATA
+            agentMind.genome = new Genome(genome);
+            agentMind.genome.Cross(agentMind.genome);
+            if (UnityEngine.Random.value < 0.5)
+                agentMind.genome.Mutate(0.9f, 0.1f, 0.2f, 0.1f);
+            else
+                agentMind.genome.Mutate(0.1f, 0.8f, 0.2f, 0.1f);
 
-        agentMind.generation = generation + 1;
-        agentMind.age = 0;
+            agentMind.InitAgent();
 
-        // SETTING DATA
-        agentMind.genome = new Genome(genome);
-        if (UnityEngine.Random.value < 0.5) 
-            agentMind.genome.Mutate(0.9f, 0.1f, 0.2f, 0.1f);
-        else
-            agentMind.genome.Mutate(0.1f, 0.8f, 0.2f, 0.1f);
+            agentMind.energy = energy / 2f;
+            energy /= 2f;
 
-        agentMind.InitAgent();
-
-        agentMind.energy = energy / 2f;
-        energy /= 2f;
-
-        Camera.main.GetComponent<Display>().bornCount++;
+            Camera.main.GetComponent<Display>().bornCount++;
+        }
     }
 
     void OnCollisionEnter2D(Collision2D col)

@@ -50,6 +50,18 @@ public class Layer : LayerData
         derivative = l.derivative;
     }
 
+    public void Cross(Layer l)
+    {
+        for (int i = 0; i < weights.GetLength(0); i++)
+        {
+            for (int j = 0; j < weights.GetLength(1); j++)
+            {
+                if (UnityEngine.Random.value < 0.5) 
+                    weights[i, j] = l.weights[i, j];
+            }
+        }
+    }
+
     public void calcLayer(double[] inputs)
     {
         Debug.Assert(inputs.Length == inputSize);
